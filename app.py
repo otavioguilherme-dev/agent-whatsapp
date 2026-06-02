@@ -69,7 +69,7 @@ else:
             try:
                 # Carrega o modelo com as instruções de sistema
                 model = genai.GenerativeModel(
-                    model_name='gemini-1.5-flash-latesth',
+                    model_name='gemini-1.5-flash-latest',
                     system_instruction=SYSTEM_INSTRUCTION
                 )
                 
