@@ -82,7 +82,7 @@ else:
                 
                 # Executa a geração usando o modelo correto
                 resposta_ia = ai.models.generate_content(
-                    model='gemini-1.5-flash',
+                    model='gemini-3.5-flashh',
                     contents=conteudo_para_gemini,
                     config=config
                 )
