@@ -1,8 +1,6 @@
 import streamlit as st
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 from PIL import Image
-import io
 
 # Configuração da página do Streamlit
 st.set_page_config(page_title="Técnico Virtual - OGNET Borrachas", page_icon="🚪", layout="wide")
@@ -10,7 +8,7 @@ st.set_page_config(page_title="Técnico Virtual - OGNET Borrachas", page_icon="�
 st.title("🛠️ Painel de Testes: Agente de Instalação OGNET")
 st.write("Simule aqui o atendimento ao cliente enviando fotos ou dúvidas sobre a instalação das gaxetas.")
 
-# 1. Configuração da API Key na Barra Lateral
+# Configuração da API Key na Barra Lateral
 st.sidebar.header("Configurações do Agente")
 api_key = st.sidebar.text_input("Google Gemini API Key", type="password")
 
@@ -37,10 +35,10 @@ for message in st.session_state.messages:
 if not api_key:
     st.warning("⚠️ Por favor, insira sua Gemini API Key na barra lateral para começar.")
 else:
-    # Inicializa o cliente do Gemini
-    ai = genai.Client(api_key=api_key)
+    # Configura a API Key no pacote oficial estável
+    genai.configure(api_key=api_key)
 
-    # 2. Área de Upload de Imagem (Simulando o cliente enviando foto no WhatsApp)
+    # Área de Upload de Imagem (Simulando o cliente enviando foto no WhatsApp)
     st.sidebar.markdown("---")
     uploaded_file = st.sidebar.file_uploader("Simular envio de foto (WhatsApp)", type=["jpg", "jpeg", "png"])
     
@@ -48,7 +46,7 @@ else:
         image = Image.open(uploaded_file)
         st.sidebar.image(image, caption="Preview da foto do cliente", use_container_width=True)
 
-    # 3. Campo de entrada de texto do chat
+    # Campo de entrada de texto do chat
     if prompt := st.chat_input("Ex: Minha borracha está com uma fresta no canto superior..."):
         
         # Mostra a mensagem do usuário no chat
@@ -63,38 +61,28 @@ else:
             user_msg["image"] = image
         st.session_state.messages.append(user_msg)
 
-        # Prepara o conteúdo para enviar ao Gemini
-        conteudo_para_gemini = []
-        
-        if uploaded_file:
-            # Converte a imagem carregada para o formato que o SDK do Gemini espera
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format=image.format)
-            img_bytes = img_byte_arr.getvalue()
-            
-            imagem_part = types.Part.from_bytes(
-                data=img_bytes,
-                mime_type=f"image/{image.format.lower()}"
-            )
-            conteudo_para_gemini.append(imagem_part)
-        
-        conteudo_para_gemini.append(prompt)
-
-        # Chamada à API do Gemini
+        # Chamada à API do Gemini usando a biblioteca estável
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             message_placeholder.markdown("🔄 *Analisando problema...*")
             
             try:
-                config = types.GenerateContentConfig(
-                    system_instruction=SYSTEM_INSTRUCTION,
-                    temperature=0.3, # Baixa temperatura para respostas mais exatas/técnicas
+                # Carrega o modelo com as instruções de sistema
+                model = genai.GenerativeModel(
+                    model_name='gemini-1.5-flash',
+                    system_instruction=SYSTEM_INSTRUCTION
                 )
                 
-                resposta_ia = ai.models.generate_content(
-                    model='gemini-1.5-flash',
-                    contents=conteudo_para_gemini,
-                    config=config
+                # Prepara o conteúdo (Texto + Imagem se houver)
+                conteudo_para_gemini = []
+                if uploaded_file:
+                    conteudo_para_gemini.append(image)
+                conteudo_para_gemini.append(prompt)
+                
+                # Gera a resposta
+                resposta_ia = model.generate_content(
+                    conteudo_para_gemini,
+                    generation_config={"temperature": 0.3}
                 )
                 
                 # Exibe a resposta final
