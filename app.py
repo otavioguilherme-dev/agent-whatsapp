@@ -4,10 +4,10 @@ from google.genai import types
 from PIL import Image
 
 # Configuração da página do Streamlit
-st.set_page_config(page_title="Técnico Virtual - OGNET Borrachas", page_icon="🚪", layout="wide")
+st.set_page_config(page_title="Técnico Virtual - OGNET BORRACHAS", page_icon="🚪", layout="wide")
 
-st.title("🛠️ Painel de Testes: Agente de Instalação OGNET")
-st.write("Simule aqui o atendimento ao cliente enviando fotos ou dúvidas sobre a instalação das gaxetas.")
+st.title("🛠️ Tecnico de Instalação da OGNET BORRACHAS")
+st.write("Envie fotos da sua instalação ou digite aqui o seu problema ou duvida que o nosso Técnico vai te ajudar a solucionar.")
 
 # Configuração da API Key na Barra Lateral
 st.sidebar.header("Configurações do Agente")
