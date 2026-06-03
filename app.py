@@ -4,7 +4,7 @@ from google.genai import types
 from PIL import Image
 
 # Configuração da página do Streamlit
-st.set_page_config(page_title="Técnico Virtual - OGNET BORRACHAS", page_icon="🚪", layout="wide")
+st.set_page_config(page_title="Suporte Técnico Virtual - OGNET BORRACHAS", page_icon="🚪", layout="wide")
 
 st.title("🛠️ Tecnico de Instalação da OGNET BORRACHAS")
 st.write("Envie fotos da sua instalação ou digite aqui o seu problema ou duvida que o nosso Técnico vai te ajudar a solucionar.")
