@@ -8,7 +8,9 @@ st.set_page_config(
     page_icon="⚡",
     layout="centered"
 )
-
+# --- CONFIGURAÇÕES CRUCIALMENTE IMPORTANTES (Preencha aqui) ---
+WEBHOOK_URL = "https://hook.us2.make.com/3jdepfa2nlkipkyjj44qm2pmva1yndbi"  # Cole aqui a URL completa do seu Webhook do Make
+IMGBB_API_KEY = "c303da0c70a1655c79f00832f7b1456d"                 # Cole aqui a chave de API que você gerou no ImgBB
 # Estilização customizada para esconder menus padrões do Streamlit
 st.markdown("""
     <style>
