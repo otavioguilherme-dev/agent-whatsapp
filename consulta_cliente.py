@@ -112,6 +112,11 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
                             # Juntamos o que o cliente digitou COM o que a IA identificou na foto
                             texto_completo_analise = (texto_cliente + " " + resposta_ia).upper().strip()
                             
+                            # --- RASTREADOR VISUAL (TEMPORÁRIO) ---
+                            with st.expander("🔍 Detalhes da Busca Interna (Diagnóstico)"):
+                                st.write("**Texto que o Python está analisando:**", texto_completo_analise)
+                                st.write("**Modelos disponíveis na planilha (Primeiros 5):**", df['MODELO_LIMPO'].head().tolist())
+                            
                             # Varre a planilha procurando se o modelo está no texto completo
                             match = df[df.apply(lambda row: row['MODELO_LIMPO'] in texto_completo_analise if row['MODELO_LIMPO'] not in ['NAN', ''] else False, axis=1)]
                             
@@ -119,8 +124,24 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
                                 sku_encontrado = str(match.iloc[0].get('SKU', ''))
                                 medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
                                 marca_encontrada = str(match.iloc[0].get('MARCA', ''))
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            st.error(f"Erro ao ler planilha: {e}")
+
+                    # 4. EXIBE A RESPOSTA FINAL FORMATADA NA TELA DO CLIENTE
+                    st.success("Análise concluída!")
+                    st.subheader("📋 Resposta do Técnico Neto:")
+                    st.write(resposta_ia)
+                    
+                    # Se encontrou o SKU na planilha, joga o card de compra logo abaixo da resposta da IA
+                    if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
+                        st.markdown("---")
+                        st.markdown(f"### 🎯 Produto Recomendado:")
+                        st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
+                        st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
+                    else:
+                        st.info("ℹ️ Modelo identificado, mas não localizado com precisão no arquivo Excel local.")
+                        
+                    st.balloons()
 
                     # 4. EXIBE A RESPOSTA FINAL FORMATADA NA TELA DO CLIENTE
                     st.success("Análise concluída!")
