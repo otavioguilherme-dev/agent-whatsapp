@@ -19,7 +19,11 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # Cabeçalho da Página
-st.image("https://ognetnauticos.com.br/wp-content/uploads/2024/logo.png", width=200, errors="ignore") # Insira a URL logo oficial se quiser
+# Versão corrigida e segura para o logotipo
+try:
+    st.image("https://ognetnauticos.com.br/wp-content/uploads/2024/logo.png", width=200)
+except Exception:
+    pass  # Se a imagem do site falhar ou não carregar, o app continua rodando sem quebrar
 st.title("⚡ Assistente Técnico Virtual")
 st.markdown("""
     Seja bem-vindo ao portal de suporte da **OGNET BORRACHAS**.  
