@@ -54,43 +54,12 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
     link_imagem_final = ""
     prosseguir = True
     
-    # Variáveis técnicas que vamos buscar no Excel local
-    sku_encontrado = "Não localizado na busca automática"
-    medida_encontrada = "Não localizada na busca automática"
-    marca_encontrada = ""
-    
     if not texto_cliente.strip() and foto_upload is None:
         st.warning("Por favor, envie uma foto ou descreva seu problema antes de iniciar.")
         prosseguir = False
         
     if prosseguir:
-   # --- BUSCA AUTOMÁTICA INTELIGENTE NO EXCEL DO GITHUB ---
-        if os.path.exists(ARQUIVO_BANCO_DADOS) and texto_cliente.strip():
-            try:
-                df = pd.read_excel(ARQUIVO_BANCO_DADOS)
-                texto_busca = texto_cliente.upper().strip()
-                
-                # Criamos colunas limpas para comparação
-                df['MODELO_LIMPO'] = df['MODELO'].astype(str).str.upper().str.strip()
-                
-                # MÁGICA DO MATCH: Varre a planilha linha por linha. 
-                # Se o MODELO da linha (ex: "VB40") estiver dentro do texto grande, dá MATCH!
-                match = df[df.apply(lambda row: row['MODELO_LIMPO'] in texto_busca if row['MODELO_LIMPO'] not in ['NAN', ''] else False, axis=1)]
-                
-                # Se não achou de primeira, tenta quebrar o texto por palavras (garantia extra)
-                if match.empty:
-                    palavras_busca = texto_busca.split()
-                    match = df[df['MODELO_LIMPO'].isin(palavras_busca)]
-
-                if not match.empty:
-                    # Captura os dados exatos da planilha
-                    sku_encontrado = str(match.iloc[0].get('SKU', 'Não informado'))
-                    medida_encontrada = str(match.iloc[0].get('MEDIDA', 'Não informada'))
-                    marca_encontrada = str(match.iloc[0].get('MARCA', ''))
-            except Exception as e:
-                pass # Evita quebrar a tela se houver erro técnico
-
-        # --- UPLOAD DA IMAGEM PARA O IMGBB ---
+        # 1. UPLOAD DA IMAGEM PARA O IMGBB (Se houver)
         if foto_upload is not None:
             with st.spinner("🤖 Otimizando sua imagem..."):
                 try:
@@ -112,13 +81,10 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
                 except Exception:
                     pass
 
-        # --- MONTAGEM DO PACOTE COMPLETO PARA O MAKE ---
+        # 2. ENVIA PARA O WEBHOOK DO MAKE PARA A IA ANALISAR PRIMEIRO
         payload = {
             "foto": link_imagem_final,
-            "texto": texto_cliente.strip(),
-            "sku_tabela": sku_encontrado,
-            "medida_tabela": medida_encontrada,
-            "marca_tabela": marca_encontrada
+            "texto": texto_cliente.strip()
         }
         
         with st.spinner("🤖 O Neto está analisando seu caso... Por favor, aguarde."):
@@ -127,14 +93,46 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
                 response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
                 
                 if response.status_code == 200:
-                    st.success("Análise concluída!")
-                    st.subheader("📋 Resposta do Técnico Neto:")
-                    
                     try:
                         resposta_json = response.json()
-                        st.write(resposta_json.get("resposta_ia", response.text))
+                        resposta_ia = resposta_json.get("resposta_ia", response.text)
                     except ValueError:
-                        st.write(response.text)
+                        resposta_ia = response.text
+                    
+                    # 3. AGORA A BUSCA INTELIGENTE NO EXCEL COMPARA COM A RESPOSTA DA IA + TEXTO DO CLIENTE
+                    sku_encontrado = None
+                    medida_encontrada = None
+                    marca_encontrada = None
+                    
+                    if os.path.exists(ARQUIVO_BANCO_DADOS):
+                        try:
+                            df = pd.read_excel(ARQUIVO_BANCO_DADOS)
+                            df['MODELO_LIMPO'] = df['MODELO'].astype(str).str.upper().str.strip()
+                            
+                            # Juntamos o que o cliente digitou COM o que a IA identificou na foto
+                            texto_completo_analise = (texto_cliente + " " + resposta_ia).upper().strip()
+                            
+                            # Varre a planilha procurando se o modelo está no texto completo
+                            match = df[df.apply(lambda row: row['MODELO_LIMPO'] in texto_completo_analise if row['MODELO_LIMPO'] not in ['NAN', ''] else False, axis=1)]
+                            
+                            if not match.empty:
+                                sku_encontrado = str(match.iloc[0].get('SKU', ''))
+                                medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
+                                marca_encontrada = str(match.iloc[0].get('MARCA', ''))
+                        except Exception:
+                            pass
+
+                    # 4. EXIBE A RESPOSTA FINAL FORMATADA NA TELA DO CLIENTE
+                    st.success("Análise concluída!")
+                    st.subheader("📋 Resposta do Técnico Neto:")
+                    st.write(resposta_ia)
+                    
+                    # Se encontrou o SKU na planilha, joga o card de compra logo abaixo da resposta da IA
+                    if sku_encontrado and sku_encontrado != 'nan':
+                        st.markdown("---")
+                        st.markdown(f"### 🎯 Produto Recomendado:")
+                        st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
+                        st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
                         
                     st.balloons() 
                 else:
