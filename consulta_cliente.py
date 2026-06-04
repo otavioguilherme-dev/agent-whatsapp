@@ -64,24 +64,31 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
         prosseguir = False
         
     if prosseguir:
-        # --- BUSCA AUTOMÁTICA NO EXCEL DO GITHUB ---
+   # --- BUSCA AUTOMÁTICA INTELIGENTE NO EXCEL DO GITHUB ---
         if os.path.exists(ARQUIVO_BANCO_DADOS) and texto_cliente.strip():
             try:
                 df = pd.read_excel(ARQUIVO_BANCO_DADOS)
-                # Forçamos a coluna de modelos para texto para evitar erros
-                df['MODELO_TEXTO'] = df['MODELO'].astype(str).str.upper().str.strip()
                 texto_busca = texto_cliente.upper().strip()
                 
-                # Procura se algum modelo da tabela está contido no texto que o cliente digitou
-                match = df[df.apply(lambda row: row['MODELO_TEXTO'] in texto_busca if row['MODELO_TEXTO'] != 'NAN' else False, axis=1)]
+                # Criamos colunas limpas para comparação
+                df['MODELO_LIMPO'] = df['MODELO'].astype(str).str.upper().str.strip()
                 
+                # MÁGICA DO MATCH: Varre a planilha linha por linha. 
+                # Se o MODELO da linha (ex: "VB40") estiver dentro do texto grande, dá MATCH!
+                match = df[df.apply(lambda row: row['MODELO_LIMPO'] in texto_busca if row['MODELO_LIMPO'] not in ['NAN', ''] else False, axis=1)]
+                
+                # Se não achou de primeira, tenta quebrar o texto por palavras (garantia extra)
+                if match.empty:
+                    palavras_busca = texto_busca.split()
+                    match = df[df['MODELO_LIMPO'].isin(palavras_busca)]
+
                 if not match.empty:
-                    # Captura os dados da primeira linha encontrada (mude os nomes das colunas se na sua tabela for diferente)
+                    # Captura os dados exatos da planilha
                     sku_encontrado = str(match.iloc[0].get('SKU', 'Não informado'))
                     medida_encontrada = str(match.iloc[0].get('MEDIDA', 'Não informada'))
                     marca_encontrada = str(match.iloc[0].get('MARCA', ''))
             except Exception as e:
-                pass # Se der erro na leitura do Excel, o fluxo segue sem quebrar a tela
+                pass # Evita quebrar a tela se houver erro técnico
 
         # --- UPLOAD DA IMAGEM PARA O IMGBB ---
         if foto_upload is not None:
