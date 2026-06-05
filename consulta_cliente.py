@@ -161,7 +161,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 except requests.exceptions.RequestException:
                     st.error("Não foi possível conectar ao motor de IA.")
                     
-        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (BUSCA MODELO OU SOLUÇÃO DE PROBLEMAS) ---
+       # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (BUSCA MODELO OU SOLUÇÃO DE PROBLEMAS) ---
         else:
             sku_encontrado = None
             medida_encontrada = None
@@ -202,31 +202,54 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
                 st.balloons()
                 
-            if response.status_code == 200:
+            # Passo C: SE NÃO ACHOU SKU, PLANILHA FALHOU -> CHAMA A IA PARA SUPORTE TÉCNICO!
+            else:
+                payload = {
+                    "foto": "sem_foto",
+                    "texto": texto_cliente.strip()
+                }
+                with st.spinner("🤖 Encaminhando para o Especialista Otávio Guilherme..."):
+                    try:
+                        headers = {"Content-Type": "application/json"}
+                        response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+                        
+                        if response.status_code == 200:
+                            resposta_ia = ""
                             try:
                                 resposta_json = response.json()
                                 resposta_ia = resposta_json.get("resposta_ia", response.text)
-                                
-                                # --- AJUSTE DE QUEBRA DE LINHA E JSON INTERNO ---
-                                # Se o Gemini devolveu um JSON stringificado dentro de 'resposta_ia'
-                                if isinstance(resposta_ia, str) and (resposta_ia.strip().startswith('{') or '"result":' in resposta_ia):
+                            except Exception:
+                                resposta_ia = response.text
+                            
+                            # Tratamento ultra seguro para remover o {"result": "..."} stringificado se houver
+                            if isinstance(resposta_ia, str):
+                                # Se o texto contiver o marcador do Gemini
+                                if '"result":' in resposta_ia:
                                     try:
-                                        # Tenta decodificar o JSON interno se houver limpezas de string necessárias
+                                        # Tenta converter o JSON interno
                                         dados_internos = json.loads(resposta_ia.strip())
                                         resposta_ia = dados_internos.get("result", resposta_ia)
                                     except Exception:
-                                        # Se falhar no parse, limpa na força bruta as aspas e o termo "result"
-                                        resposta_ia = re.sub(r'^\{\s*"result"\s*:\s*"', '', resposta_ia)
-                                        resposta_ia = re.sub(r'"\s*\}$', '', resposta_ia)
+                                        # Fallback manual por corte de texto se o JSON estiver quebrado
+                                        if '"result":"' in resposta_ia:
+                                            resposta_ia = resposta_ia.split('"result":"', 1)[1]
+                                        if resposta_ia.endswith('"}'):
+                                            resposta_ia = resposta_ia.rsplit('"}', 1)[0]
                                 
-                                # Garante a renderização correta de quebras de linha literais (\n)
-                                if isinstance(resposta_ia, str):
-                                    resposta_ia = resposta_ia.replace('\\n', '\n')
-                            except ValueError:
-                                resposta_ia = response.text
+                                # Converte as quebras de linha textuais literais para renderização real do Markdown
+                                resposta_ia = resposta_ia.replace('\\n', '\n')
+                                resposta_ia = resposta_ia.replace('\\"', '"')
                             
                             st.success("Análise concluída!")
                             st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+                            st.markdown(resposta_ia)
+                        else:
+                            st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
+                    except requests.exceptions.RequestException:
+                        st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
+
+st.divider()
+st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
                             
                             # Usamos markdown para respeitar os títulos (###), listas (*) e quebras de linha (\n)
                             st.markdown(resposta_ia)
