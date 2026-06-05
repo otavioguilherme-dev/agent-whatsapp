@@ -100,17 +100,12 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                     except ValueError:
                         resposta_ia = response.text
                     
-                    # 3. AGORA A BUSCA INTELIGENTE NO EXCEL COMPARA COM A RESPOSTA DA IA + TEXTO DO CLIENTE
-                    sku_encontrado = None
-                    medida_encontrada = None
-                    marca_encontrada = None
-                    
-                    if os.path.exists(ARQUIVO_BANCO_DADOS):
+if os.path.exists(ARQUIVO_BANCO_DADOS):
                         try:
                             df = pd.read_excel(ARQUIVO_BANCO_DADOS)
                             df = df.dropna(subset=['MODELO'])
                             
-                            # Limpamos o JSON do Make se necessário
+                            # 1. Limpamos o JSON do Make mantendo o texto puro do Otávio
                             texto_processar = resposta_ia
                             if '"RESPOSTA_IA":' in resposta_ia:
                                 try:
@@ -119,31 +114,50 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                                 except Exception:
                                     texto_processar = resposta_ia.replace('{"RESPOSTA_IA":', '').replace('}', '')
                             
-                            # Texto onde faremos a busca (Texto do cliente + Fala da IA)
-                            texto_analise_caixa_alta = (texto_cliente + " " + texto_processar).upper()
+                            # 2. Criamos o bloco de texto unificado (Cliente + IA) em caixa alta
+                            texto_completo = (texto_cliente + " " + texto_processar).upper()
                             
-                            # Criamos uma coluna padrão em maiúsculo e sem espaços nas pontas
-                            df['MODELO_TEXTO_PURO'] = df['MODELO'].astype(str).str.upper().str.strip()
+                            # 3. Criamos uma coluna limpa na tabela (Maiúsculo e sem espaços sobrando)
+                            df['MODELO_BUSCA'] = df['MODELO'].astype(str).str.upper().str.strip()
                             
                             # --- RASTREADOR VISUAL ---
                             with st.expander("🔍 Detalhes da Busca Interna (Diagnóstico)"):
-                                st.write("**Texto original analisado:**", texto_analise_caixa_alta)
+                                st.write("**Texto Completo Analisado:**", texto_completo)
                             
-                            # Ordenamos para que modelos maiores (ex: VB40) tenham prioridade sobre modelos de 2 letras
-                            df['TAMANHO'] = df['MODELO_TEXTO_PURO'].str.len()
-                            df = df.sort_values(by='TAMANHO', ascending=False)
+                            # 4. VARREDURA CIRÚRGICA: 
+                            # Procuramos na string da IA se existem as palavras exatas do modelo.
+                            # Para evitar que 'VB40A' seja ignorado se na tabela estiver 'VB40',
+                            # testamos se o modelo da tabela está contido como uma palavra ou parte central ali.
                             
                             match = pd.DataFrame()
+                            
+                            # Primeiro passo: Tenta achar o match perfeito por palavra exata isolada \b
                             for idx, row in df.iterrows():
-                                modelo_tabela = row['MODELO_TEXTO_PURO']
-                                if len(modelo_tabela) < 2 or modelo_tabela in ['NAN', '']:
+                                mod = row['MODELO_BUSCA']
+                                if len(mod) < 2 or mod in ['NAN', '']:
+                                    continue
+                                
+                                # Evita falsos positivos com palavras comuns do português ou termos genéricos
+                                if mod in ['UM', 'DE', 'A', 'O', 'E', 'PARA', 'COM', 'POR', 'TIPO', 'EM', 'S SUA']:
                                     continue
                                     
-                                # O \b garante a palavra exata (fronteira de palavra)
-                                padrao = r'\b' + re.escape(modelo_tabela)
-                                if re.search(padrao, texto_analise_caixa_alta):
+                                # Se o modelo da tabela (ex: "VB40") aparecer isolado no texto
+                                if re.search(r'\b' + re.escape(mod) + r'\b', texto_completo):
                                     match = df.loc[[idx]]
                                     break
+                            
+                            # Segundo passo: Se não achou com aspas exatas (por causa de sufixos como VB40A),
+                            # busca de forma direta nas proximidades do termo "MODELO"
+                            if match.empty:
+                                for idx, row in df.iterrows():
+                                    mod = row['MODELO_BUSCA']
+                                    if len(mod) < 3 or mod in ['NAN', '']: # Modelos muito curtos ignorados aqui
+                                        continue
+                                    if mod in texto_completo and ("MODELO" in texto_completo or "TRATA-SE" in texto_completo):
+                                        # Garante que não é um pedaço solto de palavra longa como REFRIGERAÇÃO
+                                        if mod not in "REFRIGERAÇÃO" and mod not in "EXPOSITOR":
+                                            match = df.loc[[idx]]
+                                            break
 
                             if not match.empty:
                                 sku_encontrado = str(match.iloc[0].get('SKU', ''))
