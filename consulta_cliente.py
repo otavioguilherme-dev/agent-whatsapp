@@ -77,4 +77,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                     res_imgbb = requests.post(imgbb_url, data=payload_imgbb)
                     res_data = res_imgbb.json()
                     
-                    if res_imgbb.status_code == 200 and res
+                    if res_imgbb.status_code == 200 and res_data.get("success"):
+                        link_imagem_final = res_data["data"]["url"]
+                except Exception:
+                    pass
