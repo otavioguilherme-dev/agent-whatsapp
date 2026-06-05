@@ -4,6 +4,7 @@ import json
 import base64
 import pandas as pd
 import os
+import re
 
 # Configuração visual da página
 st.set_page_config(
@@ -16,7 +17,7 @@ st.set_page_config(
 WEBHOOK_URL = "https://hook.us2.make.com/3jdepfa2nlkipkyjj44qm2pmva1yndbi"
 IMGBB_API_KEY = "c303da0c70a1655c79f00832f7b1456d"
 
-# Nome do seu arquivo que você subiu no GitHub (ajuste o nome se for diferente)
+# Nome do seu arquivo que você subiu no GitHub
 ARQUIVO_BANCO_DADOS = "base_gaxetas.xlsx" 
 
 # Estilização para esconder menus padrões
@@ -50,12 +51,12 @@ texto_cliente = st.text_area(
     key="relato_unico"
 )
 
-if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_width=True):
+if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_container_width=True):
     link_imagem_final = ""
     prosseguir = True
     
     if not texto_cliente.strip() and foto_upload is None:
-        st.warning("Por favor, envie uma foto ou descreva seu problema antes de iniciar.")
+        st.warning("Por favor, envie uma foto ou descreva seu problem antes de iniciar.")
         prosseguir = False
         
     if prosseguir:
@@ -66,127 +67,4 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
                     file_bytes = foto_upload.read()
                     base64_image = base64.b64encode(file_bytes).decode('utf-8')
                     
-                    imgbb_url = "https://api.imgbb.com/1/upload"
-                    payload_imgbb = {
-                        "key": IMGBB_API_KEY,
-                        "image": base64_image,
-                        "expiration": 600 
-                    }
-                    
-                    res_imgbb = requests.post(imgbb_url, data=payload_imgbb)
-                    res_data = res_imgbb.json()
-                    
-                    if res_imgbb.status_code == 200 and res_data.get("success"):
-                        link_imagem_final = res_data["data"]["url"]
-                except Exception:
-                    pass
-
-        # 2. ENVIA PARA O WEBHOOK DO MAKE PARA A IA ANALISAR PRIMEIRO
-        payload = {
-            "foto": link_imagem_final,
-            "texto": texto_cliente.strip()
-        }
-        
-        with st.spinner("🤖 O Neto está analisando seu caso... Por favor, aguarde."):
-            try:
-                headers = {"Content-Type": "application/json"}
-                response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
-                
-                if response.status_code == 200:
-                    try:
-                        resposta_json = response.json()
-                        resposta_ia = resposta_json.get("resposta_ia", response.text)
-                    except ValueError:
-                        resposta_ia = response.text
-                    
-                    # 3. AGORA A BUSCA INTELIGENTE NO EXCEL COMPARA COM A RESPOSTA DA IA + TEXTO DO CLIENTE
-                    sku_encontrado = None
-                    medida_encontrada = None
-                    marca_encontrada = None
-                    
-        if os.path.exists(ARQUIVO_BANCO_DADOS):
-                        try:
-                            import re
-                            df = pd.read_excel(ARQUIVO_BANCO_DADOS)
-                            df = df.dropna(subset=['MODELO'])
-                            
-                            # Limpamos o JSON do Make se necessário
-                            texto_processar = resposta_ia
-                            if '"RESPOSTA_IA":' in resposta_ia:
-                                try:
-                                    dados_json = json.loads(resposta_ia)
-                                    texto_processar = dados_json.get("RESPOSTA_IA", resposta_ia)
-                                except Exception:
-                                    texto_processar = resposta_ia.replace('{"RESPOSTA_IA":', '').replace('}', '')
-                            
-                            # Texto onde faremos a busca (Texto do cliente + Fala da IA)
-                            texto_analise_caixa_alta = (texto_cliente + " " + texto_processar).upper()
-                            
-                            # Criamos uma coluna padrão em maiúsculo e sem espaços nas pontas
-                            df['MODELO_TEXTO_PURO'] = df['MODELO'].astype(str).str.upper().str.strip()
-                            
-                            # --- RASTREADOR VISUAL ---
-                            with st.expander("🔍 Detalhes da Busca Interna (Diagnóstico)"):
-                                st.write("**Texto original analisado:**", texto_analise_caixa_alta)
-                            
-                            # BUSCA ULTRA PRECISA (Varre a tabela de trás para frente ou prioriza termos mais longos)
-                            # Ordenamos para que modelos maiores (ex: VB40) tenham prioridade sobre modelos de 2 letras
-                            df['TAMANHO'] = df['MODELO_TEXTO_PURO'].str.len()
-                            df = df.sort_values(by='TAMANHO', ascending=False)
-                            
-                            match = pd.DataFrame()
-                            for idx, row in df.iterrows():
-                                modelo_tabela = row['MODELO_TEXTO_PURO']
-                                if len(modelo_tabela) < 2 or modelo_tabela in ['NAN', '']:
-                                    continue
-                                    
-                                # O \b garante que estamos buscando a palavra exata (fronteira de palavra)
-                                # Ex: Procura por "VB40" ou "VB40A" pura no meio do texto
-                                padrao = r'\b' + re.escape(modelo_tabela)
-                                if re.search(padrao, texto_analise_caixa_alta):
-                                    match = df.loc[[idx]]
-                                    break # Achou o match exato e mais longo primeiro? Para o loop!
-
-                            if not match.empty:
-                                sku_encontrado = str(match.iloc[0].get('SKU', ''))
-                                medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
-                                marca_encontrada = str(match.iloc[0].get('MARCA', ''))
-                        except Exception as e:
-                            st.error(f"Erro ao processar busca: {e}")
-
-                    # 4. EXIBE A RESPOSTA FINAL FORMATADA NA TELA DO CLIENTE
-                    st.success("Análise concluída!")
-                    st.subheader("📋 Resposta do Técnico Neto:")
-                    st.write(resposta_ia)
-                    
-                    # Se encontrou o SKU na planilha, joga o card de compra logo abaixo da resposta da IA
-                    if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
-                        st.markdown("---")
-                        st.markdown(f"### 🎯 Produto Recomendado:")
-                        st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
-                        st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
-                    else:
-                        st.info("ℹ️ Modelo identificado, mas não localizado com precisão no arquivo Excel local.")
-                        
-                    st.balloons()
-
-                    # 4. EXIBE A RESPOSTA FINAL FORMATADA NA TELA DO CLIENTE
-                    st.success("Análise concluída!")
-                    st.subheader("📋 Resposta do Técnico Neto:")
-                    st.write(resposta_ia)
-                    
-                    # Se encontrou o SKU na planilha, joga o card de compra logo abaixo da resposta da IA
-                    if sku_encontrado and sku_encontrado != 'nan':
-                        st.markdown("---")
-                        st.markdown(f"### 🎯 Produto Recomendado:")
-                        st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
-                        st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
-                        
-                    st.balloons() 
-                else:
-                    st.error(f"Houve um problema no servidor. (Código: {response.status_code})")
-            except requests.exceptions.RequestException:
-                st.error("Não foi possível conectar ao motor de IA.")
-
-st.divider()
-st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
+                    imgbb_url = "https://api.
