@@ -38,7 +38,7 @@ st.title("⚡ Assistente Técnico Virtual")
 st.markdown("Seja bem-vindo ao portal de suporte da **OGNET BORRACHAS**.")
 st.divider()
 
-st.subheader("📋 Envie os dados do seu produto")
+st.subheader("📋 Envie os dados do seu product")
 
 foto_upload = st.file_uploader("📸 1. Selecione ou tire uma foto nítida (da etiqueta ou do problema):", type=["png", "jpg", "jpeg"])
 
@@ -144,13 +144,22 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                             except Exception as e:
                                 st.error(f"Erro ao processar busca: {e}")
 
+                        # Limpeza de segurança para rota com Foto
+                        if isinstance(resposta_ia, str):
+                            for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
+                                if delimitador in resposta_ia:
+                                    resposta_ia = resposta_ia.split(delimitador, 1)[0]
+                            resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"').strip()
+                            if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
+                            if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
+
                         st.success("Análise concluída!")
                         st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
-                        st.write(resposta_ia)
+                        st.markdown(resposta_ia)
                         
                         if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
                             st.markdown("---")
-                            st.markdown(f"### 🎯 Produto Recommended:")
+                            st.markdown(f"### 🎯 Produto Recomendado:")
                             st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
                             st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
                         else:
@@ -161,7 +170,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 except requests.exceptions.RequestException:
                     st.error("Não foi possível conectar ao motor de IA.")
                     
-       # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (BUSCA MODELO OU SOLUÇÃO DE PROBLEMAS) ---
+        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETOR) ---
         else:
             sku_encontrado = None
             medida_encontrada = None
@@ -221,29 +230,31 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                             except Exception:
                                 resposta_ia = response.text
                             
-                            # Tratamento ultra seguro para remover o {"result": "..."} stringificado se houver
+                            # Tratamento para limpar strings e remover metadados (JSON bruto do Gemini)
                             if isinstance(resposta_ia, str):
-                                # Se o texto contiver o marcador do Gemini
                                 if '"result":' in resposta_ia:
                                     try:
-                                        # Tenta converter o JSON interno
                                         dados_internos = json.loads(resposta_ia.strip())
                                         resposta_ia = dados_internos.get("result", resposta_ia)
                                     except Exception:
-                                        # Fallback manual por corte de texto se o JSON estiver quebrado
                                         if '"result":"' in resposta_ia:
                                             resposta_ia = resposta_ia.split('"result":"', 1)[1]
-                                        if resposta_ia.endswith('"}'):
-                                            resposta_ia = resposta_ia.rsplit('"}', 1)[0]
                                 
-                                # Converte as quebras de linha textuais literais para renderização real do Markdown
+                                # Guilhotina de Metadados: Elimina chaves residuais de tokens e logs da API
+                                for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
+                                    if delimitador in resposta_ia:
+                                        resposta_ia = resposta_ia.split(delimitador, 1)[0]
+                                
+                                # Formatação correta das quebras de linha e aspas para Markdown
                                 resposta_ia = resposta_ia.replace('\\n', '\n')
                                 resposta_ia = resposta_ia.replace('\\"', '"')
+                                resposta_ia = resposta_ia.strip()
+                                
+                                if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
+                                if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
                             
-                           # Cria um container vazio que pode ser limpo/reescrito
+                            # Desenha a resposta estática limpa
                             espaco_resposta = st.empty()
-                            
-                            # Abre o container para desenhar a resposta limpa de forma estática
                             with espaco_resposta.container():
                                 st.success("Análise concluída!")
                                 st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
@@ -253,48 +264,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                             st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
                     except requests.exceptions.RequestException:
                         st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
-if response.status_code == 200:
-                            resposta_ia = ""
-                            try:
-                                resposta_json = response.json()
-                                resposta_ia = resposta_json.get("resposta_ia", response.text)
-                            except Exception:
-                                resposta_ia = response.text
-                            
-                            if isinstance(resposta_ia, str):
-                                # 1. Se a IA envelopou o texto num JSON interno com "result"
-                                if '"result":' in resposta_ia:
-                                    try:
-                                        dados_internos = json.loads(resposta_ia.strip())
-                                        resposta_ia = dados_internos.get("result", resposta_ia)
-                                    except Exception:
-                                        if '"result":"' in resposta_ia:
-                                            resposta_ia = resposta_ia.split('"result":"', 1)[1]
-                                
-                                # 2. LIMPEZA DOS METADADOS (Corta a assinatura do Gemini e os tokens vazados)
-                                if '","thoughtSignature"' in resposta_ia:
-                                    resposta_ia = resposta_ia.split('","thoughtSignature"', 1)[0]
-                                if '"thoughtSignature"' in resposta_ia:
-                                    resposta_ia = resposta_ia.split('"thoughtSignature"', 1)[0]
-                                if '"}],"role":"model"}' in resposta_ia:
-                                    resposta_ia = resposta_ia.split('"}],"role":"model"}', 1)[0]
-                                
-                                # 3. Ajusta formatação de quebras de linha normais
-                                resposta_ia = resposta_ia.replace('\\n', '\n')
-                                resposta_ia = resposta_ia.replace('\\"', '"')
-                                resposta_ia = resposta_ia.strip()
-                                
-                                # Remove aspas duplas residuais que sobram no início ou fim do texto cortado
-                                if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
-                                if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
-                            
-                            # Exibe de forma limpa na tela
-                            espaco_resposta = st.empty()
-                            with espaco_resposta.container():
-                                st.success("Análise concluída!")
-                                st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
-                                st.markdown(resposta_ia)
-# O divisor e o rodapé devem ficar FORA de qualquer bloco 'if' ou 'else' anterior, 
-# bem no final do arquivo, para não serem duplicados durante a execução.
+
+# Elementos estáticos do rodapé (Totalmente isolados fora das condições do botão)
 st.divider()
 st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
