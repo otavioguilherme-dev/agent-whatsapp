@@ -59,8 +59,8 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
         st.warning("Por favor, envie uma foto ou descreva seu problema antes de iniciar.")
         prosseguir = False
         
-    if prosseguir:
-        # 1. UPLOAD DA IMAGEM PARA O IMGBB (Se houver)
+  if prosseguir:
+        # --- CASO 1: O CLIENTE ENVIOU UMA FOTO (CHAMA A IA + EXCEL) ---
         if foto_upload is not None:
             with st.spinner("🤖 Otimizando sua imagem..."):
                 try:
@@ -81,6 +81,129 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                         link_imagem_final = res_data["data"]["url"]
                 except Exception:
                     pass
+
+            payload = {
+                "foto": link_imagem_final,
+                "texto": texto_cliente.strip()
+            }
+            
+            with st.spinner("🤖 O Otávio Guilherme está analisando seu caso... Por favor, aguarde."):
+                try:
+                    headers = {"Content-Type": "application/json"}
+                    response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+                    
+                    if response.status_code == 200:
+                        try:
+                            resposta_json = response.json()
+                            resposta_ia = resposta_json.get("resposta_ia", response.text)
+                        except ValueError:
+                            resposta_ia = response.text
+                        
+                        sku_encontrado = None
+                        medida_encontrada = None
+                        marca_encontrada = None
+                        
+                        if os.path.exists(ARQUIVO_BANCO_DADOS):
+                            try:
+                                df = pd.read_excel(ARQUIVO_BANCO_DADOS)
+                                df = df.dropna(subset=['MODELO'])
+                                
+                                texto_processar = resposta_ia
+                                if '"RESPOSTA_IA":' in resposta_ia:
+                                    try:
+                                        dados_json = json.loads(resposta_ia)
+                                        texto_processar = dados_json.get("RESPOSTA_IA", resposta_ia)
+                                    except Exception:
+                                        texto_processar = resposta_ia.replace('{"RESPOSTA_IA":', '').replace('}', '')
+                                
+                                texto_completo = (texto_cliente + " " + texto_processar).upper()
+                                df['MODELO_BUSCA'] = df['MODELO'].astype(str).str.upper().str.strip()
+                                
+                                match = pd.DataFrame()
+                                for idx, row in df.iterrows():
+                                    mod = row['MODELO_BUSCA']
+                                    if len(mod) < 2 or mod in ['NAN', '']: continue
+                                    if mod in ['UM', 'DE', 'A', 'O', 'E', 'PARA', 'COM', 'POR', 'TIPO', 'EM', 'S SUA']: continue
+                                    if re.search(r'\b' + re.escape(mod) + r'\b', texto_completo):
+                                        match = df.loc[[idx]]
+                                        break
+                                
+                                if match.empty:
+                                    for idx, row in df.iterrows():
+                                        mod = row['MODELO_BUSCA']
+                                        if len(mod) < 3 or mod in ['NAN', '']: continue
+                                        if mod in texto_completo and ("MODELO" in texto_completo or "TRATA-SE" in texto_completo):
+                                            if mod not in "REFRIGERAÇÃO" and mod not in "EXPOSITOR":
+                                                match = df.loc[[idx]]
+                                                break
+
+                                if not match.empty:
+                                    sku_encontrado = str(match.iloc[0].get('SKU', ''))
+                                    medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
+                                    marca_encontrada = str(match.iloc[0].get('MARCA', ''))
+                            except Exception as e:
+                                st.error(f"Erro ao processar busca: {e}")
+
+                        st.success("Análise concluída!")
+                        st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+                        st.write(resposta_ia)
+                        
+                        if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
+                            st.markdown("---")
+                            st.markdown(f"### 🎯 Produto Recomendado:")
+                            st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
+                            st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
+                        else:
+                            st.info("ℹ️ Modelo identificado na imagem, mas não localizado com precisão no arquivo Excel local.")
+                        st.balloons()
+                    else:
+                        st.error(f"Houve um problema no servidor de IA. (Código: {response.status_code})")
+                except requests.exceptions.RequestException:
+                    st.error("Não foi possível conectar ao motor de IA.")
+                    
+        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (BUSCA DIRETA SUPER RÁPIDA) ---
+        else:
+            sku_encontrado = None
+            medida_encontrada = None
+            marca_encontrada = None
+            texto_busca_cliente = texto_cliente.upper().strip()
+            
+            if os.path.exists(ARQUIVO_BANCO_DADOS):
+                with st.spinner("🔍 Buscando modelo no catálogo..."):
+                    try:
+                        df = pd.read_excel(ARQUIVO_BANCO_DADOS)
+                        df = df.dropna(subset=['MODELO'])
+                        df['MODELO_BUSCA'] = df['MODELO'].astype(str).str.upper().str.strip()
+                        
+                        match = pd.DataFrame()
+                        for idx, row in df.iterrows():
+                            mod = row['MODELO_BUSCA']
+                            if len(mod) < 2 or mod in ['NAN', '']: continue
+                            
+                            # Vê se o modelo da tabela está contido no que o usuário digitou
+                            if mod in texto_busca_cliente:
+                                match = df.loc[[idx]]
+                                break
+                                
+                        if not match.empty:
+                            sku_encontrado = str(match.iloc[0].get('SKU', ''))
+                            medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
+                            marca_encontrada = str(match.iloc[0].get('MARCA', ''))
+                    except Exception as e:
+                        st.error(f"Erro ao ler banco de dados: {e}")
+            
+            st.success("Busca concluída!")
+            st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+            
+            if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
+                st.write(f"Olá! Localizei o modelo **{texto_cliente.strip()}** diretamente em nosso catálogo de gaxetas.")
+                st.markdown("---")
+                st.markdown(f"### 🎯 Produto Recomendado:")
+                st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
+                st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
+                st.balloons()
+            else:
+                st.write(f"Olá! Analisei sua mensagem sobre o termo **'{texto_cliente.strip()}'**, mas infelizmente não encontrei um modelo correspondente exato em nossa planilha de estoque atual. Por favor, verifique se há algum erro de digitação ou envie uma foto da etiqueta para análise.")
 
         # 2. ENVIA PARA O WEBHOOK DO MAKE PARA A IA ANALISAR PRIMEIRO
         payload = {
