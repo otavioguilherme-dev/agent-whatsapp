@@ -253,7 +253,47 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                             st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
                     except requests.exceptions.RequestException:
                         st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
-
+if response.status_code == 200:
+                            resposta_ia = ""
+                            try:
+                                resposta_json = response.json()
+                                resposta_ia = resposta_json.get("resposta_ia", response.text)
+                            except Exception:
+                                resposta_ia = response.text
+                            
+                            if isinstance(resposta_ia, str):
+                                # 1. Se a IA envelopou o texto num JSON interno com "result"
+                                if '"result":' in resposta_ia:
+                                    try:
+                                        dados_internos = json.loads(resposta_ia.strip())
+                                        resposta_ia = dados_internos.get("result", resposta_ia)
+                                    except Exception:
+                                        if '"result":"' in resposta_ia:
+                                            resposta_ia = resposta_ia.split('"result":"', 1)[1]
+                                
+                                # 2. LIMPEZA DOS METADADOS (Corta a assinatura do Gemini e os tokens vazados)
+                                if '","thoughtSignature"' in resposta_ia:
+                                    resposta_ia = resposta_ia.split('","thoughtSignature"', 1)[0]
+                                if '"thoughtSignature"' in resposta_ia:
+                                    resposta_ia = resposta_ia.split('"thoughtSignature"', 1)[0]
+                                if '"}],"role":"model"}' in resposta_ia:
+                                    resposta_ia = resposta_ia.split('"}],"role":"model"}', 1)[0]
+                                
+                                # 3. Ajusta formatação de quebras de linha normais
+                                resposta_ia = resposta_ia.replace('\\n', '\n')
+                                resposta_ia = resposta_ia.replace('\\"', '"')
+                                resposta_ia = resposta_ia.strip()
+                                
+                                # Remove aspas duplas residuais que sobram no início ou fim do texto cortado
+                                if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
+                                if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
+                            
+                            # Exibe de forma limpa na tela
+                            espaco_resposta = st.empty()
+                            with espaco_resposta.container():
+                                st.success("Análise concluída!")
+                                st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+                                st.markdown(resposta_ia)
 # O divisor e o rodapé devem ficar FORA de qualquer bloco 'if' ou 'else' anterior, 
 # bem no final do arquivo, para não serem duplicados durante a execução.
 st.divider()
