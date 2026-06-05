@@ -104,49 +104,49 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
                     medida_encontrada = None
                     marca_encontrada = None
                     
-                    if os.path.exists(ARQUIVO_BANCO_DADOS):
+                   if os.path.exists(ARQUIVO_BANCO_DADOS):
                         try:
+                            import re
                             df = pd.read_excel(ARQUIVO_BANCO_DADOS)
-                            
-                            # Remove linhas onde o modelo esteja totalmente vazio na planilha
                             df = df.dropna(subset=['MODELO'])
                             
-                            # Tratamento para limpar se a resposta vier envelopada em JSON string
+                            # Limpamos o JSON do Make se necessário
                             texto_processar = resposta_ia
                             if '"RESPOSTA_IA":' in resposta_ia:
                                 try:
                                     dados_json = json.loads(resposta_ia)
                                     texto_processar = dados_json.get("RESPOSTA_IA", resposta_ia)
                                 except Exception:
-                                    # Se não for um JSON perfeito, limpa na raça removendo as chaves da string
                                     texto_processar = resposta_ia.replace('{"RESPOSTA_IA":', '').replace('}', '')
                             
-                            # Função interna para deixar apenas letras e números
-                            def limpar_texto(txt):
-                                if pd.isna(txt):
-                                    return ""
-                                return "".join(c for c in str(txt).upper() if c.isalnum())
+                            # Texto onde faremos a busca (Texto do cliente + Fala da IA)
+                            texto_analise_caixa_alta = (texto_cliente + " " + texto_processar).upper()
                             
-                            # Preparamos o texto final de análise (Texto do cliente + Fala limpa da IA)
-                            texto_limpo_analise = limpar_texto(texto_cliente + " " + texto_processar)
+                            # Criamos uma coluna padrão em maiúsculo e sem espaços nas pontas
+                            df['MODELO_TEXTO_PURO'] = df['MODELO'].astype(str).str.upper().str.strip()
                             
-                            # Criamos a coluna de comparação garantindo que seja string pura
-                            df['MODELO_COMPARACAO'] = df['MODELO'].apply(limpar_texto)
-                            
-                            # Remove modelos que ficaram vazios após a limpeza
-                            df = df[df['MODELO_COMPARACAO'] != ""]
-                            
-                            # --- RASTREADOR VISUAL (PÓS-TRATAMENTO) ---
+                            # --- RASTREADOR VISUAL ---
                             with st.expander("🔍 Detalhes da Busca Interna (Diagnóstico)"):
-                                st.write("**Texto limpo analisado pelo Python:**", texto_limpo_analise)
-                                st.write("**Modelos limpos carregados da tabela (Total):**", len(df))
+                                st.write("**Texto original analisado:**", texto_analise_caixa_alta)
                             
-                            # BUSCA: Verifica se o modelo da tabela está contido no texto enviado
-                           # BUSCA ULTRA BILATERAL:
-                            # 1. Verifica se o modelo da tabela está dentro do texto da IA
-                            # 2. OU se o modelo da tabela está contido de forma parcial no que a IA extraiu (ex: VB40 dentro de VB40A)
-                            match = df[df.apply(lambda row: (row['MODELO_COMPARACAO'] in texto_limpo_analise or texto_limpo_analise in row['MODELO_COMPARACAO'] or (len(row['MODELO_COMPARACAO']) > 2 and row['MODELO_COMPARACAO'] in texto_processar.upper())) if row['MODELO_COMPARACAO'] else False, axis=1)]
+                            # BUSCA ULTRA PRECISA (Varre a tabela de trás para frente ou prioriza termos mais longos)
+                            # Ordenamos para que modelos maiores (ex: VB40) tenham prioridade sobre modelos de 2 letras
+                            df['TAMANHO'] = df['MODELO_TEXTO_PURO'].str.len()
+                            df = df.sort_values(by='TAMANHO', ascending=False)
                             
+                            match = pd.DataFrame()
+                            for idx, row in df.iterrows():
+                                modelo_tabela = row['MODELO_TEXTO_PURO']
+                                if len(modelo_tabela) < 2 or modelo_tabela in ['NAN', '']:
+                                    continue
+                                    
+                                # O \b garante que estamos buscando a palavra exata (fronteira de palavra)
+                                # Ex: Procura por "VB40" ou "VB40A" pura no meio do texto
+                                padrao = r'\b' + re.escape(modelo_tabela)
+                                if re.search(padrao, texto_analise_caixa_alta):
+                                    match = df.loc[[idx]]
+                                    break # Achou o match exato e mais longo primeiro? Para o loop!
+
                             if not match.empty:
                                 sku_encontrado = str(match.iloc[0].get('SKU', ''))
                                 medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
