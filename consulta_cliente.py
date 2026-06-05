@@ -212,17 +212,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 st.balloons()
                 
             # Passo C: SE NÃO ACHOU SKU, PLANILHA FALHOU -> CHAMA A IA PARA SUPORTE TÉCNICO!
-            else:
-                payload = {
-                    "foto": "sem_foto",
-                    "texto": texto_cliente.strip()
-                }
-                with st.spinner("🤖 Encaminhando para o Especialista Otávio Guilherme..."):
-                    try:
-                        headers = {"Content-Type": "application/json"}
-                        response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
-                        
-                        if response.status_code == 200:
+          if response.status_code == 200:
                             resposta_ia = ""
                             try:
                                 resposta_json = response.json()
@@ -240,6 +230,14 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                                         if '"result":"' in resposta_ia:
                                             resposta_ia = resposta_ia.split('"result":"', 1)[1]
                                 
+                                # TRAVA ANTI-DUPLICAÇÃO: 
+                                # Se a resposta contiver a introdução do Otávio repetida, corta na primeira ocorrência
+                                marcador_repeticao = "Olá! Aqui é o Otávio Guilherme"
+                                if resposta_ia.count(marcador_repeticao) > 1:
+                                    # Separa pelo marcador e reconstrói apenas com a primeira parte do bloco
+                                    partes = resposta_ia.split(marcador_repeticao)
+                                    resposta_ia = marcador_repeticao + partes[1]
+
                                 # Guilhotina de Metadados: Elimina chaves residuais de tokens e logs da API
                                 for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
                                     if delimitador in resposta_ia:
