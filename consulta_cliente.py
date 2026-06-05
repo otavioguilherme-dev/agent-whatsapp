@@ -142,7 +142,10 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
                                 st.write("**Modelos limpos carregados da tabela (Total):**", len(df))
                             
                             # BUSCA: Verifica se o modelo da tabela está contido no texto enviado
-                            match = df[df.apply(lambda row: row['MODELO_COMPARACAO'] in texto_limpo_analise if row['MODELO_COMPARACAO'] else False, axis=1)]
+                           # BUSCA ULTRA BILATERAL:
+                            # 1. Verifica se o modelo da tabela está dentro do texto da IA
+                            # 2. OU se o modelo da tabela está contido de forma parcial no que a IA extraiu (ex: VB40 dentro de VB40A)
+                            match = df[df.apply(lambda row: (row['MODELO_COMPARACAO'] in texto_limpo_analise or texto_limpo_analise in row['MODELO_COMPARACAO'] or (len(row['MODELO_COMPARACAO']) > 2 and row['MODELO_COMPARACAO'] in texto_processar.upper())) if row['MODELO_COMPARACAO'] else False, axis=1)]
                             
                             if not match.empty:
                                 sku_encontrado = str(match.iloc[0].get('SKU', ''))
