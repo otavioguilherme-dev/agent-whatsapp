@@ -104,7 +104,7 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
                     medida_encontrada = None
                     marca_encontrada = None
                     
-                   if os.path.exists(ARQUIVO_BANCO_DADOS):
+        if os.path.exists(ARQUIVO_BANCO_DADOS):
                         try:
                             import re
                             df = pd.read_excel(ARQUIVO_BANCO_DADOS)
