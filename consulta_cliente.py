@@ -107,25 +107,49 @@ if st.button("🚀 Iniciar Análise do Neto", type="primary", use_container_widt
                     if os.path.exists(ARQUIVO_BANCO_DADOS):
                         try:
                             df = pd.read_excel(ARQUIVO_BANCO_DADOS)
-                            df['MODELO_LIMPO'] = df['MODELO'].astype(str).str.upper().str.strip()
                             
-                            # Juntamos o que o cliente digitou COM o que a IA identificou na foto
-                            texto_completo_analise = (texto_cliente + " " + resposta_ia).upper().strip()
+                            # Remove linhas onde o modelo esteja totalmente vazio na planilha
+                            df = df.dropna(subset=['MODELO'])
                             
-                            # --- RASTREADOR VISUAL (TEMPORÁRIO) ---
+                            # Tratamento para limpar se a resposta vier envelopada em JSON string
+                            texto_processar = resposta_ia
+                            if '"RESPOSTA_IA":' in resposta_ia:
+                                try:
+                                    dados_json = json.loads(resposta_ia)
+                                    texto_processar = dados_json.get("RESPOSTA_IA", resposta_ia)
+                                except Exception:
+                                    # Se não for um JSON perfeito, limpa na raça removendo as chaves da string
+                                    texto_processar = resposta_ia.replace('{"RESPOSTA_IA":', '').replace('}', '')
+                            
+                            # Função interna para deixar apenas letras e números
+                            def limpar_texto(txt):
+                                if pd.isna(txt):
+                                    return ""
+                                return "".join(c for c in str(txt).upper() if c.isalnum())
+                            
+                            # Preparamos o texto final de análise (Texto do cliente + Fala limpa da IA)
+                            texto_limpo_analise = limpar_texto(texto_cliente + " " + texto_processar)
+                            
+                            # Criamos a coluna de comparação garantindo que seja string pura
+                            df['MODELO_COMPARACAO'] = df['MODELO'].apply(limpar_texto)
+                            
+                            # Remove modelos que ficaram vazios após a limpeza
+                            df = df[df['MODELO_COMPARACAO'] != ""]
+                            
+                            # --- RASTREADOR VISUAL (PÓS-TRATAMENTO) ---
                             with st.expander("🔍 Detalhes da Busca Interna (Diagnóstico)"):
-                                st.write("**Texto que o Python está analisando:**", texto_completo_analise)
-                                st.write("**Modelos disponíveis na planilha (Primeiros 5):**", df['MODELO_LIMPO'].head().tolist())
+                                st.write("**Texto limpo analisado pelo Python:**", texto_limpo_analise)
+                                st.write("**Modelos limpos carregados da tabela (Total):**", len(df))
                             
-                            # Varre a planilha procurando se o modelo está no texto completo
-                            match = df[df.apply(lambda row: row['MODELO_LIMPO'] in texto_completo_analise if row['MODELO_LIMPO'] not in ['NAN', ''] else False, axis=1)]
+                            # BUSCA: Verifica se o modelo da tabela está contido no texto enviado
+                            match = df[df.apply(lambda row: row['MODELO_COMPARACAO'] in texto_limpo_analise if row['MODELO_COMPARACAO'] else False, axis=1)]
                             
                             if not match.empty:
                                 sku_encontrado = str(match.iloc[0].get('SKU', ''))
                                 medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
                                 marca_encontrada = str(match.iloc[0].get('MARCA', ''))
                         except Exception as e:
-                            st.error(f"Erro ao ler planilha: {e}")
+                            st.error(f"Erro ao processar busca: {e}")
 
                     # 4. EXIBE A RESPOSTA FINAL FORMATADA NA TELA DO CLIENTE
                     st.success("Análise concluída!")
