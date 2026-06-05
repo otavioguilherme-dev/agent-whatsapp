@@ -252,6 +252,6 @@ st.divider()
 st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
                             
                             # Usamos markdown para respeitar os títulos (###), listas (*) e quebras de linha (\n)
-                            st.markdown(resposta_ia)
+st.markdown(resposta_ia)
 st.divider()
 st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
