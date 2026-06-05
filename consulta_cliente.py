@@ -38,7 +38,7 @@ st.title("⚡ Assistente Técnico Virtual")
 st.markdown("Seja bem-vindo ao portal de suporte da **OGNET BORRACHAS**.")
 st.divider()
 
-st.subheader("📋 Envie os dados do seu product")
+st.subheader("📋 Envie os dados do seu produto")
 
 foto_upload = st.file_uploader("📸 1. Selecione ou tire uma foto nítida (da etiqueta ou do problema):", type=["png", "jpg", "jpeg"])
 
@@ -170,7 +170,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 except requests.exceptions.RequestException:
                     st.error("Não foi possível conectar ao motor de IA.")
                     
-        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETOR) ---
+        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETO) ---
         else:
             sku_encontrado = None
             medida_encontrada = None
@@ -212,7 +212,18 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 st.balloons()
                 
             # Passo C: SE NÃO ACHOU SKU, PLANILHA FALHOU -> CHAMA A IA PARA SUPORTE TÉCNICO!
-          if response.status_code == 200:
+            else:
+                payload = {
+                    "foto": "sem_foto",
+                    "texto": texto_cliente.strip()
+                }
+                with st.spinner("🤖 Encaminhando para o Especialista Otávio Guilherme..."):
+                    try:
+                        headers = {"Content-Type": "application/json"}
+                        # REQUISIÇÃO CORRIGIDA AQUI:
+                        response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+                        
+                        if response.status_code == 200:
                             resposta_ia = ""
                             try:
                                 resposta_json = response.json()
@@ -230,14 +241,6 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                                         if '"result":"' in resposta_ia:
                                             resposta_ia = resposta_ia.split('"result":"', 1)[1]
                                 
-                                # TRAVA ANTI-DUPLICAÇÃO: 
-                                # Se a resposta contiver a introdução do Otávio repetida, corta na primeira ocorrência
-                                marcador_repeticao = "Olá! Aqui é o Otávio Guilherme"
-                                if resposta_ia.count(marcador_repeticao) > 1:
-                                    # Separa pelo marcador e reconstrói apenas com a primeira parte do bloco
-                                    partes = resposta_ia.split(marcador_repeticao)
-                                    resposta_ia = marcador_repeticao + partes[1]
-
                                 # Guilhotina de Metadados: Elimina chaves residuais de tokens e logs da API
                                 for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
                                     if delimitador in resposta_ia:
