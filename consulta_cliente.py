@@ -161,7 +161,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 except requests.exceptions.RequestException:
                     st.error("Não foi possível conectar ao motor de IA.")
                     
-        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (BUSCA MODELO OU SOLUÇÃO DE PROBLEMAS) ---
+      # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (BUSCA MODELO OU SOLUÇÃO DE PROBLEMAS) ---
         else:
             sku_encontrado = None
             medida_encontrada = None
@@ -202,10 +202,11 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
                 st.balloons()
                 
-            # Passo C: SE NÃO ACHOU SKU, SIGNIFICA QUE É UMA DÚVIDA DE INSTALAÇÃO OU SUPORTE TÉCNICO!
+            # Passo C: SE NÃO ACHOU SKU, PLANILHA FALHOU -> CHAMA A IA PARA SUPORTE TÉCNICO!
             else:
+                # Mudamos de "" para "sem_foto" para o Make não bugar
                 payload = {
-                    "foto": "",
+                    "foto": "sem_foto",
                     "texto": texto_cliente.strip()
                 }
                 with st.spinner("🤖 Encaminhando para o Especialista Otávio Guilherme..."):
@@ -227,19 +228,6 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                             st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
                     except requests.exceptions.RequestException:
                         st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
-            
-            st.success("Busca concluída!")
-            st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
-            
-            if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
-                st.write(f"Olá! Localizei o modelo **{texto_cliente.strip()}** diretamente em nosso catálogo de gaxetas.")
-                st.markdown("---")
-                st.markdown(f"### 🎯 Produto Recomendado:")
-                st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
-                st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
-                st.balloons()
-            else:
-                st.write(f"Olá! Analisei sua mensagem sobre o termo **'{texto_cliente.strip()}'**, mas infelizmente não encontrei um modelo correspondente exato em nossa planilha de estoque atual. Por favor, verifique se há algum erro de digitação ou envie uma foto da etiqueta para análise.")
 
 st.divider()
 st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
