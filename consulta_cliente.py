@@ -56,7 +56,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
     prosseguir = True
     
     if not texto_cliente.strip() and foto_upload is None:
-        st.warning("Por favor, envie uma foto ou descreva seu problem antes de iniciar.")
+        st.warning("Por favor, envie uma foto ou descreva seu problema antes de iniciar.")
         prosseguir = False
         
     if prosseguir:
@@ -100,12 +100,17 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                     except ValueError:
                         resposta_ia = response.text
                     
-if os.path.exists(ARQUIVO_BANCO_DADOS):
+                    # 3. AGORA A BUSCA INTELIGENTE NO EXCEL COMPARA COM A RESPOSTA DA IA + TEXTO DO CLIENTE
+                    sku_encontrado = None
+                    medida_encontrada = None
+                    marca_encontrada = None
+                    
+                    if os.path.exists(ARQUIVO_BANCO_DADOS):
                         try:
                             df = pd.read_excel(ARQUIVO_BANCO_DADOS)
                             df = df.dropna(subset=['MODELO'])
                             
-                            # 1. Limpamos o JSON do Make mantendo o texto puro do Otávio
+                            # Limpamos o JSON do Make se necessário
                             texto_processar = resposta_ia
                             if '"RESPOSTA_IA":' in resposta_ia:
                                 try:
@@ -114,20 +119,15 @@ if os.path.exists(ARQUIVO_BANCO_DADOS):
                                 except Exception:
                                     texto_processar = resposta_ia.replace('{"RESPOSTA_IA":', '').replace('}', '')
                             
-                            # 2. Criamos o bloco de texto unificado (Cliente + IA) em caixa alta
+                            # Criamos o bloco de texto unificado (Cliente + IA) em caixa alta
                             texto_completo = (texto_cliente + " " + texto_processar).upper()
                             
-                            # 3. Criamos uma coluna limpa na tabela (Maiúsculo e sem espaços sobrando)
+                            # Criamos uma coluna limpa na tabela (Maiúsculo e sem espaços sobrando)
                             df['MODELO_BUSCA'] = df['MODELO'].astype(str).str.upper().str.strip()
                             
                             # --- RASTREADOR VISUAL ---
                             with st.expander("🔍 Detalhes da Busca Interna (Diagnóstico)"):
                                 st.write("**Texto Completo Analisado:**", texto_completo)
-                            
-                            # 4. VARREDURA CIRÚRGICA: 
-                            # Procuramos na string da IA se existem as palavras exatas do modelo.
-                            # Para evitar que 'VB40A' seja ignorado se na tabela estiver 'VB40',
-                            # testamos se o modelo da tabela está contido como uma palavra ou parte central ali.
                             
                             match = pd.DataFrame()
                             
@@ -151,10 +151,9 @@ if os.path.exists(ARQUIVO_BANCO_DADOS):
                             if match.empty:
                                 for idx, row in df.iterrows():
                                     mod = row['MODELO_BUSCA']
-                                    if len(mod) < 3 or mod in ['NAN', '']: # Modelos muito curtos ignorados aqui
+                                    if len(mod) < 3 or mod in ['NAN', '']:
                                         continue
                                     if mod in texto_completo and ("MODELO" in texto_completo or "TRATA-SE" in texto_completo):
-                                        # Garante que não é um pedaço solto de palavra longa como REFRIGERAÇÃO
                                         if mod not in "REFRIGERAÇÃO" and mod not in "EXPOSITOR":
                                             match = df.loc[[idx]]
                                             break
