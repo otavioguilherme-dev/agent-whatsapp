@@ -240,18 +240,21 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                                 resposta_ia = resposta_ia.replace('\\n', '\n')
                                 resposta_ia = resposta_ia.replace('\\"', '"')
                             
-                            st.success("Análise concluída!")
-                            st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
-                            st.markdown(resposta_ia)
+                           # Cria um container vazio que pode ser limpo/reescrito
+                            espaco_resposta = st.empty()
+                            
+                            # Abre o container para desenhar a resposta limpa de forma estática
+                            with espaco_resposta.container():
+                                st.success("Análise concluída!")
+                                st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+                                st.markdown(resposta_ia)
+                                
                         else:
                             st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
                     except requests.exceptions.RequestException:
                         st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
 
-st.divider()
-st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
-                            
-                            # Usamos markdown para respeitar os títulos (###), listas (*) e quebras de linha (\n)
-st.markdown(resposta_ia)
+# O divisor e o rodapé devem ficar FORA de qualquer bloco 'if' ou 'else' anterior, 
+# bem no final do arquivo, para não serem duplicados durante a execução.
 st.divider()
 st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
