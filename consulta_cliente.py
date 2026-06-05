@@ -81,3 +81,26 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                         link_imagem_final = res_data["data"]["url"]
                 except Exception:
                     pass
+
+            payload = {
+                "foto": link_imagem_final,
+                "texto": texto_cliente.strip()
+            }
+            
+            with st.spinner("🤖 O Otávio Guilherme está analisando seu caso... Por favor, aguarde."):
+                try:
+                    headers = {"Content-Type": "application/json"}
+                    response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+                    
+                    if response.status_code == 200:
+                        try:
+                            resposta_json = response.json()
+                            resposta_ia = resposta_json.get("resposta_ia", response.text)
+                        except ValueError:
+                            resposta_ia = response.text
+                        
+                        sku_encontrado = None
+                        medida_encontrada = None
+                        marca_encontrada = None
+                        
+                        if os.path.exists(ARQUIVO_BANCO
