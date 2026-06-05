@@ -161,15 +161,16 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 except requests.exceptions.RequestException:
                     st.error("Não foi possível conectar ao motor de IA.")
                     
-        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (BUSCA DIRETA SUPER RÁPIDA) ---
+        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (BUSCA MODELO OU SOLUÇÃO DE PROBLEMAS) ---
         else:
             sku_encontrado = None
             medida_encontrada = None
             marca_encontrada = None
             texto_busca_cliente = texto_cliente.upper().strip()
             
+            # Passo A: Tenta uma busca rápida por modelo no Excel
             if os.path.exists(ARQUIVO_BANCO_DADOS):
-                with st.spinner("🔍 Buscando modelo no catálogo..."):
+                with st.spinner("🔍 Verificando se é uma consulta de modelo..."):
                     try:
                         df = pd.read_excel(ARQUIVO_BANCO_DADOS)
                         df = df.dropna(subset=['MODELO'])
@@ -179,7 +180,6 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                         for idx, row in df.iterrows():
                             mod = row['MODELO_BUSCA']
                             if len(mod) < 2 or mod in ['NAN', '']: continue
-                            
                             if mod in texto_busca_cliente:
                                 match = df.loc[[idx]]
                                 break
@@ -188,8 +188,45 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                             sku_encontrado = str(match.iloc[0].get('SKU', ''))
                             medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
                             marca_encontrada = str(match.iloc[0].get('MARCA', ''))
-                    except Exception as e:
-                        st.error(f"Erro ao ler banco de dados: {e}")
+                    except Exception:
+                        pass
+            
+            # Passo B: Se achou o SKU direto pelo modelo digitado
+            if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
+                st.success("Busca concluída!")
+                st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+                st.write(f"Olá! Localizei o modelo **{texto_cliente.strip()}** diretamente em nosso catálogo de gaxetas.")
+                st.markdown("---")
+                st.markdown(f"### 🎯 Produto Recomendado:")
+                st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
+                st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
+                st.balloons()
+                
+            # Passo C: SE NÃO ACHOU SKU, SIGNIFICA QUE É UMA DÚVIDA DE INSTALAÇÃO OU SUPORTE TÉCNICO!
+            else:
+                payload = {
+                    "foto": "",
+                    "texto": texto_cliente.strip()
+                }
+                with st.spinner("🤖 Encaminhando para o Especialista Otávio Guilherme..."):
+                    try:
+                        headers = {"Content-Type": "application/json"}
+                        response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+                        
+                        if response.status_code == 200:
+                            try:
+                                resposta_json = response.json()
+                                resposta_ia = resposta_json.get("resposta_ia", response.text)
+                            except ValueError:
+                                resposta_ia = response.text
+                            
+                            st.success("Análise concluída!")
+                            st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+                            st.write(resposta_ia)
+                        else:
+                            st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
+                    except requests.exceptions.RequestException:
+                        st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
             
             st.success("Busca concluída!")
             st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
