@@ -259,5 +259,5 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                 st.subheader("📋 Resposta do Especialista Otávio Guilherme - OGNET BORRACHAS:")
                                 st.markdown(resposta_ia)
                                 
-                                else:
+           else:
                                 st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
