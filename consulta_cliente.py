@@ -107,11 +107,8 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     
                     if res_imgbb.status_code == 200 and res_data.get("success"):
                         link_imagem_final = res_data["data"]["url"]
-                        st.info(f"🔗 Imagem hospedada com sucesso: {link_imagem_final}")
-                    else:
-                        st.error(f"Erro no ImgBB: {res_imgbb.text}")
-                except Exception as e:
-                    st.error(f"Falha crítica na otimização da imagem: {e}")
+                except Exception:
+                    pass
 
             payload = {
                 "foto": link_imagem_final if link_imagem_final else "sem_foto",
@@ -121,19 +118,11 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
             with st.spinner("🤖 O especialista OGNET está analisando sua foto e descrição... Por favor, aguarde."):
                 try:
                     headers = {"Content-Type": "application/json"}
-                    response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
-                    
-                    # Rastreamento para ver exatamente o que o Make devolveu
-                    st.info(f"📡 Código de Retorno do Servidor: {response.status_code}")
+                    # Revertido de volta para data=json.dumps(payload) para o Make reconhecer os campos da foto
+                    response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
                     
                     if response.status_code == 200:
                         resposta_ia = limpar_resposta_ia(response.text)
-                        
-                        # Se a resposta veio vazia após a limpeza, mostra o que veio bruto
-                        if not resposta_ia.strip():
-                            st.warning("Aviso: A resposta limpa ficou vazia. Resposta bruta do servidor:")
-                            st.code(response.text)
-                            resposta_ia = response.text
                         
                         sku_encontrado = None
                         medida_encontrada = None
@@ -172,10 +161,9 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
                         st.balloons()
                     else:
-                        st.error(f"O Make recusou a requisição com foto. Resposta do erro:")
-                        st.code(response.text)
-                except requests.exceptions.RequestException as e:
-                    st.error(f"Não foi possível conectar ao motor de IA: {e}")
+                        st.error(f"Houve um problema no servidor de IA ao processar a foto. (Código: {response.status_code})")
+                except requests.exceptions.RequestException:
+                    st.error("Não foi possível conectar ao motor de IA para envio da foto.")
                     
         # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETO) ---
         else:
