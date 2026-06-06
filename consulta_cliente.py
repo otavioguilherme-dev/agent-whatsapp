@@ -117,9 +117,11 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
             
             with st.spinner("🤖 O especialista OGNET está analisando sua foto e descrição... Por favor, aguarde."):
                 try:
+                    # Força cabeçalho limpo para requisição textual pura de JSON estruturado
                     headers = {"Content-Type": "application/json"}
-                    # Revertido de volta para data=json.dumps(payload) para o Make reconhecer os campos da foto
-                    response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+                    
+                    # ADICIONADO timeout=60: Espera até 60 segundos para o Make processar a imagem sem derrubar a conexão
+                    response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers, timeout=60)
                     
                     if response.status_code == 200:
                         resposta_ia = limpar_resposta_ia(response.text)
@@ -161,7 +163,9 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
                         st.balloons()
                     else:
-                        st.error(f"Houve um problema no servidor de IA ao processar a foto. (Código: {response.status_code})")
+                        st.error(f"O servidor do especialista retornou um aviso. (Código: {response.status_code})")
+                except requests.exceptions.Timeout:
+                    st.error("O motor de IA demorou muito para responder a imagem. Verifique o cenário no Make.")
                 except requests.exceptions.RequestException:
                     st.error("Não foi possível conectar ao motor de IA para envio da foto.")
                     
@@ -212,7 +216,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 with st.spinner("🤖 Encaminhando para o Especialista OGNET... Por favor, aguarde."):
                     try:
                         headers = {"Content-Type": "application/json"}
-                        response_ia_texto = requests.post(WEBHOOK_URL, json=payload, headers=headers)
+                        response_ia_texto = requests.post(WEBHOOK_URL, json=payload, headers=headers, timeout=30)
                         
                         if response_ia_texto.status_code == 200:
                             resposta_ia = limpar_resposta_ia(response_ia_texto.text)
