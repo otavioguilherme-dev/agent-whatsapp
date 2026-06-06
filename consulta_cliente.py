@@ -260,4 +260,4 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                 st.markdown(resposta_ia)
                                 
            else:
-                                st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
+                st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
