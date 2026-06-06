@@ -212,7 +212,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 st.balloons()
                 
             # Passo C: SE NÃO ACHOU SKU, PLANILHA FALHOU -> CHAMA A IA PARA SUPORTE TÉCNICO!
-         if response.status_code == 200:
+            if response.status_code == 200:
                             resposta_ia = ""
                             try:
                                 resposta_json = response.json()
