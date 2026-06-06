@@ -40,7 +40,7 @@ st.divider()
 
 st.subheader("📋 Envie os dados do produto que voce deseja comprar ou obter suporte")
 
-foto_upload = st.file_uploader("📸 1. Selecione ou tire uma foto nítida (da etiqueta com o modelo comercial ou do problemaque esta ocorrendo ma sua borracha):", type=["png", "jpg", "jpeg"])
+foto_upload = st.file_uploader("📸 1. Selecione ou tire uma foto nítida (da etiqueta com o modelo comercial ou do problema que esta ocorrendo na sua borracha):", type=["png", "jpg", "jpeg"])
 
 if foto_upload is not None:
     st.image(foto_upload, caption="Sua foto carregada.", width=300)
