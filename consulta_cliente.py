@@ -144,12 +144,15 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             except Exception as e:
                                 st.error(f"Erro ao processar busca: {e}")
 
-                        # Limpeza de segurança para rota com Foto
-                        if isinstance(resposta_ia, str):
+                        # if isinstance(resposta_ia, str):
                             for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
                                 if delimitador in resposta_ia:
                                     resposta_ia = resposta_ia.split(delimitador, 1)[0]
+                            
+                            # --- CORREÇÃO DA BARRA INVERTIDA ---
+                            resposta_ia = resposta_ia.replace('\\ ', ' ')  # Corrige o escape de espaço
                             resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"').strip()
+                            
                             if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
                             if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
 
