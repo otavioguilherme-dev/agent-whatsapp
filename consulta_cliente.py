@@ -266,9 +266,9 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                 if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
                                 if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
                             
-                            # Desenha a resposta limpa na tela
+                            # Desenha a resposta limpa na tela (Correção da Sintaxe aqui)
                             espaco_resposta = st.empty()
-                        with arrows_container := espaco_resposta.container():
+                            with espaco_resposta.container():
                                 st.success("Análise concluída!")
                                 st.subheader("📋 Resposta do Especialista Otávio Guilherme - OGNET BORRACHAS:")
                                 st.markdown(resposta_ia)
