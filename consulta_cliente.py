@@ -46,43 +46,35 @@ if foto_upload is not None:
     st.image(foto_upload, caption="Sua foto carregada.", width=300)
 
 texto_cliente = st.text_area(
-    "✍️ 2. Descreva o problem que esta ocorrendo com a sua borracha/instalação ou ou digite o modelo da geladeira/freezer que voce deseja comprar:",
+    "✍️ 2. Descreva o problema que esta ocorrendo com a sua borracha/instalação ou ou digite o modelo da geladeira/freezer que voce deseja comprar:",
     placeholder="Ex: Minha geladeira é o modelo BRM44B, qual o modelo devo comprar? ou troquei a borracha mas o ima é fraco",
     key="relato_unico"
 )
 
-# Função auxiliar para extrair e limpar cirurgicamente o texto gerado
 def limpar_resposta_ia(texto_bruto):
     if not isinstance(texto_bruto, str):
         return ""
     
     texto = texto_bruto.strip()
     
-    # 1. Se vier envelopado em estrutura de objeto JSON ("result" ou "resposta_ia")
-    for chave in ['"resposta_ia"', '"result"']:
-        if chave in texto:
-            # Captura tudo o que estiver dentro das aspas do valor da chave
-            match = re.search(rf'{chave}\s*:\s*"(.*)"', texto, re.DOTALL)
-            if match:
-                texto = match.group(1)
-                break
-            else:
-                # Fallback caso venha mal formatado mas contenha o padrão inicial
-                texto = re.sub(rf'\{{\s*{chave}\s*:\s*"', '', texto)
-
-    # 2. Corta metadados residuais conhecidos que o Make joga no fim do buffer
+    # 1. Remove os cabeçalhos de JSON brutos do Make logo no início se existirem
+    if texto.startswith('{"resposta_ia":"'):
+        texto = texto.split('{"resposta_ia":"', 1)[1]
+    elif texto.startswith('{"result":"'):
+        texto = texto.split('{"result":"', 1)[1]
+    
+    # 2. Corta metadados residuais conhecidos que o Make injeta no fim do buffer
     for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
         if delimitador in texto:
             texto = texto.split(delimitador, 1)[0]
             
-    # 3. Restaura formatações e quebras de linha textuais literais do JSON
+    # 3. Restaura formatações e quebras de linha textuais literais vindas da API
     texto = texto.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ')
     
-    # 4. Remove aspas órfãs que sobram nas extremidades após os cortes
+    # 4. Remove chaves ou aspas finais que sobram por conta do corte do delimitador
     texto = texto.strip()
-    if texto.startswith('"'): texto = texto[1:]
-    if texto.endswith('"'): texto = texto[:-1]
-    if texto.endswith('}'): texto = texto[:-1].strip()
+    if texto.endswith('"}'): texto = texto[:-2]
+    if texto.endswith('}'): texto = texto[:-1]
     if texto.endswith('"'): texto = texto[:-1]
     
     return texto.strip()
