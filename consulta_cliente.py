@@ -150,8 +150,9 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                 if delimitador in resposta_ia:
                                     resposta_ia = resposta_ia.split(delimitador, 1)[0]
                             
-                            # Remove barras invertidas perdidas antes de espaços, asteriscos ou letras
-                            resposta_ia = re.sub(r'\\(?=[*\s\w])', '', resposta_ia)
+                            # Força codificação crua para capturar qualquer tipo de escape oblíquo
+                            resposta_ia = resposta_ia.encode('utf-8', 'ignore').decode('unicode_escape', 'ignore')
+                            resposta_ia = re.sub(r'\\+', '', resposta_ia)
                             resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"').strip()
                             
                             if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
@@ -256,17 +257,24 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                     if delimitador in resposta_ia:
                                         resposta_ia = resposta_ia.split(delimitador, 1)[0]
                                 
-                                # --- ULTRA LIMPEZA ANTI-ESCAPE (ROTA TEXTO DIRETO) ---
-                                resposta_ia = re.sub(r'\\(?=[*\s\w])', '', resposta_ia)
-                                resposta_ia = resposta_ia.replace('\\n', '\n')
-                                resposta_ia = resposta_ia.replace('\\"', '"')
-                                resposta_ia = resposta_ia.replace('\\t', '    ')
+                                # --- TRATAMENTO AGRESSIVO ANTI-CORTES DE ESCAPE ---
+                                # 1. Converte e limpa escapes de nível binário/unicode do JSON
+                                try:
+                                    resposta_ia = resposta_ia.encode('utf-8', 'ignore').decode('unicode_escape', 'ignore')
+                                except Exception:
+                                    pass
+                                
+                                # 2. Remove absolutamente qualquer barra invertida literal remanescente
+                                resposta_ia = re.sub(r'\\+', '', resposta_ia)
+                                
+                                # 3. Restaura quebras de linha e aspas limpas padrões
+                                resposta_ia = resposta_ia.replace('\n', '\n')
                                 resposta_ia = resposta_ia.strip()
                                 
                                 if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
                                 if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
                             
-                            # Desenha a resposta limpa na tela (Correção da Sintaxe aqui)
+                            # Desenha a resposta limpa na tela
                             espaco_resposta = st.empty()
                             with espaco_resposta.container():
                                 st.success("Análise concluída!")
