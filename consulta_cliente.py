@@ -55,6 +55,10 @@ def limpar_resposta_ia(texto_bruto):
     
     texto = texto_bruto.strip()
     
+    # Se o Make devolveu um JSON estruturado com erro ou vazio, trata antes de limpar
+    if texto == '{"resposta_ia": ""}' or texto == '{"resposta_ia":""}':
+        return ""
+    
     # 1. Remove sujeiras de JSON duplicado no início que o Make possa enviar
     texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
     texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
@@ -107,7 +111,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 except Exception as e:
                     st.error(f"Erro ao processar imagem: {e}")
 
-            # ATENÇÃO: Formato de payload estruturado bruto para o fluxo de foto
+            # Monta o dicionário limpo
             payload_foto = {
                 "foto": link_imagem_final if link_imagem_final else "sem_foto",
                 "texto": texto_cliente.strip()
@@ -115,17 +119,22 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
             
             with st.spinner("🤖 O especialista OGNET está analisando sua foto e descrição... Por favor, aguarde."):
                 try:
-                    # Envia como JSON puro para o Make não quebrar a leitura da URL da imagem
-                    response = requests.post(WEBHOOK_URL, json=payload_foto, timeout=45)
+                    # Enviando como dados de formulário tradicional para o Webhook do Make processar corretamente as chaves nativas
+                    response = requests.post(WEBHOOK_URL, data=payload_foto, timeout=45)
                     
                     if response.status_code == 200:
                         resposta_ia = limpar_resposta_ia(response.text)
+                        
+                        # Se a IA retornou em branco, avisa o usuário sobre a configuração do Make
+                        if not resposta_ia.strip():
+                            st.warning("⚠️ A IA recebeu a foto, mas retornou uma resposta vazia. Certifique-se de que o módulo do Gemini dentro do Make está configurado para ler o link da imagem (Multimodal).")
+                            resposta_ia = "Não foi possível gerar a análise visual técnica. Por favor, descreva o modelo ou problema por texto."
                         
                         sku_encontrado = None
                         medida_encontrada = None
                         marca_encontrada = None
                         
-                        if os.path.exists(ARQUIVO_BANCO_DADOS):
+                        if os.path.exists(ARQUIVO_BANCO_DADOS) and resposta_ia.strip():
                             try:
                                 df = pd.read_excel(ARQUIVO_BANCO_DADOS)
                                 df = df.dropna(subset=['MODELO'])
@@ -156,7 +165,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             st.markdown("---")
                             st.markdown(f"### 🎯 Produto Recomendado:")
                             st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
-                        st.balloons()
+                            st.balloons()
                     else:
                         st.error(f"Erro no servidor de IA. (Código: {response.status_code})")
                 except requests.exceptions.RequestException:
@@ -211,7 +220,6 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 
                 with st.spinner("🤖 Encaminhando para o Especialista OGNET... Por favor, aguarde."):
                     try:
-                        # Envio padrão original isolado que não causa erro 500
                         response_ia_texto = requests.post(WEBHOOK_URL, json=payload_texto, timeout=30)
                         
                         if response_ia_texto.status_code == 200:
