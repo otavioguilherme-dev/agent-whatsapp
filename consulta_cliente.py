@@ -30,28 +30,28 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 try:
-    st.image("	https://ognetborrachas.streamlit.app/~/+/media/38265db37548b0d424994d0517a2b3ae.jpg", width=200)
+    st.image("	https://ognetborrachas.streamlit.app/~/+/media/38265db37548b0d424994d0517a2b3ae.jpg", width=400)
 except Exception:
     pass  
 
-st.title("⚡ Assistente Técnico Virtual")
-st.markdown("Seja bem-vindo ao portal de suporte da **OGNET BORRACHAS**.")
+st.title("⚡ Especialista Técnico Virtual da OGNET BORRACHAS")
+st.markdown("Seja bem-vindo ao portal de apoio e suporte da **OGNET BORRACHAS**.")
 st.divider()
 
-st.subheader("📋 Envie os dados do seu produto")
+st.subheader("📋 Envie os dados do produto que voce deseja comprar ou obter suporte")
 
-foto_upload = st.file_uploader("📸 1. Selecione ou tire uma foto nítida (da etiqueta ou do problema):", type=["png", "jpg", "jpeg"])
+foto_upload = st.file_uploader("📸 1. Selecione ou tire uma foto nítida (da etiqueta com o modelo comercial ou do problemaque esta ocorrendo ma sua borracha):", type=["png", "jpg", "jpeg"])
 
 if foto_upload is not None:
     st.image(foto_upload, caption="Sua foto carregada.", width=300)
 
 texto_cliente = st.text_area(
-    "✍️ 2. Descreva o que você precisa ou digite o modelo da geladeira:",
-    placeholder="Ex: Minha geladeira é o modelo BRM44B, qual o SKU?",
+    "✍️ 2. Descreva o problema que esta ocorrendo com a sua borracha/instalação ou ou digite o modelo da geladeira/freezer que voce deseja comprar:",
+    placeholder="Ex: Minha geladeira é o modelo BRM44B, qual o SKU? ou troquei a borracha mas o ima é fraco",
     key="relato_unico"
 )
 
-if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_container_width=True):
+if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_container_width=True):
     link_imagem_final = ""
     prosseguir = True
     
@@ -87,7 +87,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                 "texto": texto_cliente.strip()
             }
             
-            with st.spinner("🤖 O Otávio Guilherme está analisando seu caso... Por favor, aguarde."):
+            with st.spinner("🤖 O especialista OGNET está analisando seu caso... Por favor, aguarde."):
                 try:
                     headers = {"Content-Type": "application/json"}
                     response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
@@ -154,7 +154,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                             if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
 
                         st.success("Análise concluída!")
-                        st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+                        st.subheader("📋 Resposta do Especialista OGNET:")
                         st.markdown(resposta_ia)
                         
                         if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
@@ -203,7 +203,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
             # Passo B: Se achou o SKU direto pelo modelo digitado
             if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
                 st.success("Busca concluída!")
-                st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+                st.subheader("📋 Resposta do Especialista OGNET:")
                 st.write(f"Olá! Localizei o modelo **{texto_cliente.strip()}** diretamente em nosso catálogo de gaxetas.")
                 st.markdown("---")
                 st.markdown(f"### 🎯 Produto Recomendado:")
@@ -217,7 +217,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                     "foto": "sem_foto",
                     "texto": texto_cliente.strip()
                 }
-                with st.spinner("🤖 Encaminhando para o Especialista Otávio Guilherme..."):
+                with st.spinner("🤖 Encaminhando para o Especialista OGNET..."):
                     try:
                         headers = {"Content-Type": "application/json"}
                         # REQUISIÇÃO CORRIGIDA AQUI:
@@ -258,7 +258,7 @@ if st.button("🚀 Iniciar Análise do Otávio Guilherme", type="primary", use_c
                             espaco_resposta = st.empty()
                             with espaco_resposta.container():
                                 st.success("Análise concluída!")
-                                st.subheader("📋 Resposta do Especialista Otávio Guilherme:")
+                                st.subheader("📋 Resposta do Especialista OGNET:")
                                 st.markdown(resposta_ia)
                                 
                         else:
