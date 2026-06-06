@@ -90,14 +90,23 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
             with st.spinner("🤖 O especialista OGNET está analisando seu caso... Por favor, aguarde."):
                 try:
                     headers = {"Content-Type": "application/json"}
-                    response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+                    response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
                     
                     if response.status_code == 200:
-                        try:
-                            resposta_json = response.json()
-                            resposta_ia = resposta_json.get("resposta_ia", response.text)
-                        except ValueError:
-                            resposta_ia = response.text
+                        # Força leitura como texto puro ignorando quebras de JSON do Make
+                        resposta_ia = response.text
+                        
+                        # Se o Make mandou o JSON envelopado, extrai via regex sem usar json.loads
+                        if '"resposta_ia":' in resposta_ia:
+                            match_texto = re.search(r'"resposta_ia"\s*:\s*"(.*)"', resposta_ia, re.DOTALL)
+                            if match_texto:
+                                resposta_ia = match_texto.group(1)
+                        
+                        # Limpezas de segurança para formatação estável
+                        resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"').strip()
+                        for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
+                            if delimitador in resposta_ia:
+                                resposta_ia = resposta_ia.split(delimitador, 1)[0]
                         
                         sku_encontrado = None
                         medida_encontrada = None
@@ -107,16 +116,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             try:
                                 df = pd.read_excel(ARQUIVO_BANCO_DADOS)
                                 df = df.dropna(subset=['MODELO'])
-                                
-                                texto_processar = resposta_ia
-                                if '"RESPOSTA_IA":' in resposta_ia:
-                                    try:
-                                        dados_json = json.loads(resposta_ia)
-                                        texto_processar = dados_json.get("RESPOSTA_IA", resposta_ia)
-                                    except Exception:
-                                        texto_processar = resposta_ia.replace('{"RESPOSTA_IA":', '').replace('}', '')
-                                
-                                texto_completo = (texto_cliente + " " + texto_processar).upper()
+                                texto_completo = (texto_cliente + " " + resposta_ia).upper()
                                 df['MODELO_BUSCA'] = df['MODELO'].astype(str).str.upper().str.strip()
                                 
                                 match = pd.DataFrame()
@@ -127,37 +127,13 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                     if re.search(r'\b' + re.escape(mod) + r'\b', texto_completo):
                                         match = df.loc[[idx]]
                                         break
-                                
-                                if match.empty:
-                                    for idx, row in df.iterrows():
-                                        mod = row['MODELO_BUSCA']
-                                        if len(mod) < 3 or mod in ['NAN', '']: continue
-                                        if mod in texto_completo and ("MODELO" in texto_completo or "TRATA-SE" in texto_completo):
-                                            if mod not in "REFRIGERAÇÃO" and mod not in "EXPOSITOR":
-                                                match = df.loc[[idx]]
-                                                break
 
                                 if not match.empty:
                                     sku_encontrado = str(match.iloc[0].get('SKU', ''))
                                     medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
                                     marca_encontrada = str(match.iloc[0].get('MARCA', ''))
-                            except Exception as e:
-                                st.error(f"Erro ao processar busca: {e}")
-
-                        # --- CORREÇÃO CIRÚRGICA DE TEXTO (ROTA COM FOTO) ---
-                        if isinstance(resposta_ia, str):
-                            for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
-                                if delimitador in resposta_ia:
-                                    resposta_ia = resposta_ia.split(delimitador, 1)[0]
-                            
-                            # Trata quebras literais primeiro, mantendo a codificação limpa
-                            resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"')
-                            # Limpa qualquer tipo de barra invertida residual do JSON antes de rendering
-                            resposta_ia = resposta_ia.replace('\\', '')
-                            resposta_ia = resposta_ia.strip()
-                            
-                            if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
-                            if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
+                            except Exception:
+                                pass
 
                         st.success("Análise concluída!")
                         st.subheader("📋 Resposta do Especialista OGNET:")
@@ -167,9 +143,6 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             st.markdown("---")
                             st.markdown(f"### 🎯 Produto Recomendado:")
                             st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
-                            st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
-                        else:
-                            st.info("ℹ️ Modelo identificado na imagem, mas não localizado com precisão no arquivo Excel local.")
                         st.balloons()
                     else:
                         st.error(f"Houve um problema no servidor de IA. (Código: {response.status_code})")
@@ -183,7 +156,6 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
             marca_encontrada = None
             texto_busca_cliente = texto_cliente.upper().strip()
             
-            # Passo A: Tenta uma busca rápida por modelo no Excel
             if os.path.exists(ARQUIVO_BANCO_DADOS):
                 with st.spinner("🔍 Verificando se é uma consulta de modelo..."):
                     try:
@@ -206,7 +178,6 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     except Exception:
                         pass
             
-            # Passo B: Se achou o SKU direto pelo modelo digitado
             if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
                 st.success("Busca concluída!")
                 st.subheader("📋 Resposta do Especialista OGNET:")
@@ -214,10 +185,8 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 st.markdown("---")
                 st.markdown(f"### 🎯 Produto Recomendado:")
                 st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
-                st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
                 st.balloons()
                 
-            # Passo C: SE NÃO ACHOU SKU, PLANILHA FALHOU -> DISPARA O WEBHOOK PARA A IA!
             else:
                 payload = {
                     "foto": "sem_foto",
@@ -227,51 +196,29 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 with st.spinner("🤖 Encaminhando para o Especialista OGNET... Por favor, aguarde."):
                     try:
                         headers = {"Content-Type": "application/json"}
-                        response_ia_texto = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+                        response_ia_texto = requests.post(WEBHOOK_URL, json=payload, headers=headers)
                         
                         if response_ia_texto.status_code == 200:
-                            resposta_ia = ""
-                            try:
-                                resposta_json = response_ia_texto.json()
-                                resposta_ia = resposta_json.get("resposta_ia", response_ia_texto.text)
-                            except Exception:
-                                resposta_ia = response_ia_texto.text
+                            # Captura como texto bruto para evitar a quebra do interpretador JSON
+                            resposta_ia = response_ia_texto.text
                             
-                            # --- EXTRATOR AVANÇADO ANTI-BAGUNÇA (JSON/CANDIDATES) ---
-                            if isinstance(resposta_ia, str):
-                                # Se o Make enviou a estrutura bruta da API (candidates/parts)
-                                if '"text":' in resposta_ia or '"parts":' in resposta_ia:
-                                    valores_texto = re.findall(r'"text"\s*:\s*"([^"]+)"', resposta_ia)
-                                    if valores_texto:
-                                        resposta_ia = "\n".join(valores_texto)
-                                
-                                # Se o JSON veio aninhado num campo "result" ou "RESPOSTA_IA"
-                                elif '"result":' in resposta_ia or '"RESPOSTA_IA":' in resposta_ia:
-                                    try:
-                                        dados_internos = json.loads(resposta_ia.strip())
-                                        resposta_ia = dados_internos.get("result", dados_internos.get("RESPOSTA_IA", resposta_ia))
-                                    except Exception:
-                                        pass
-
-                                # Corta metadados conhecidos do final da resposta
-                                for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
-                                    if delimitador in resposta_ia:
-                                        resposta_ia = resposta_ia.split(delimitador, 1)[0]
-                                
-                                # --- TRATAMENTO CIRÚRGICO DE TEXTO (ROTA TEXTO DIRETO) ---
-                                # Substitui quebras literais de string primeiro
-                                resposta_ia = resposta_ia.replace('\\n', '\n')
-                                resposta_ia = resposta_ia.replace('\\"', '"')
-                                resposta_ia = resposta_ia.replace('\\t', '    ')
-                                
-                                # Elimina qualquer barra literal que sobrou e que quebraria o markdown
-                                resposta_ia = resposta_ia.replace('\\', '')
-                                resposta_ia = resposta_ia.strip()
-                                
-                                if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
-                                if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
+                            # Tratamento via Regex extraindo o conteúdo interno de 'resposta_ia'
+                            if '"resposta_ia":' in resposta_ia:
+                                match_texto = re.search(r'"resposta_ia"\s*:\s*"(.*)"', resposta_ia, re.DOTALL)
+                                if match_texto:
+                                    resposta_ia = match_texto.group(1)
                             
-                            # Desenha a resposta limpa na tela
+                            # Limpeza de escape sequences padrão
+                            resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ').strip()
+                            
+                            # Corta metadados residuais do fluxo
+                            for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
+                                if delimitador in resposta_ia:
+                                    resposta_ia = resposta_ia.split(delimitador, 1)[0]
+                                    
+                            if resposta_ia.endswith('"'): 
+                                resposta_ia = resposta_ia[:-1]
+                            
                             espaco_resposta = st.empty()
                             with espaco_resposta.container():
                                 st.success("Análise concluída!")
@@ -282,6 +229,6 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     except requests.exceptions.RequestException:
                         st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
 
-# Elementos estáticos do rodapé (Totalmente isolados fora das condições do botão)
+# Elementos estáticos do rodapé
 st.divider()
 st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
