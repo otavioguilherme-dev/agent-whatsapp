@@ -47,7 +47,7 @@ if foto_upload is not None:
 
 texto_cliente = st.text_area(
     "✍️ 2. Descreva o problema que esta ocorrendo com a sua borracha/instalação ou ou digite o modelo da geladeira/freezer que voce deseja comprar:",
-    placeholder="Ex: Minha geladeira é o modelo BRM44B, qual o SKU? ou troquei a borracha mas o ima é fraco",
+    placeholder="Ex: Minha geladeira é o modelo BRM44B, qual o modelo devo comprar? ou troquei a borracha mas o ima é fraco",
     key="relato_unico"
 )
 
