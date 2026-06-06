@@ -8,7 +8,7 @@ import re
 
 # Configuração visual da página
 st.set_page_config(
-    page_title="Suporte Técnico Virtual - OGNET BORRACHAS",
+    page_title="Técnico IA-Virtual da OGNET BORRACHAS",
     page_icon="⚡",
     layout="centered"
 )
@@ -30,7 +30,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 try:
-    st.image("https://ognetnauticos.com.br/wp-content/uploads/2024/logo.png", width=200)
+    st.image("logo.jpg", width=200)
 except Exception:
     pass  
 
