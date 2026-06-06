@@ -58,9 +58,7 @@ def limpar_resposta_ia(texto_bruto):
     texto = texto_bruto.strip()
     
     # 1. Remove qualquer combinação de sujeira de JSON/Result duplicado no início
-    # Remove {"resposta_ia": ou {"result":
     texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*"', '', texto)
-    # Remove o segundo nível se o Make duplicou: {"result": ou {"resposta_ia":
     texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*"', '', texto)
     
     # 2. Corta metadados residuais conhecidos que o Make joga no fim do buffer
@@ -109,17 +107,20 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     
                     if res_imgbb.status_code == 200 and res_data.get("success"):
                         link_imagem_final = res_data["data"]["url"]
-                except Exception:
-                    pass
+                    else:
+                        st.error("Erro temporário ao processar o upload da imagem. Tentando enviar dados técnicos...")
+                except Exception as e:
+                    st.error(f"Falha na otimização da imagem: {e}")
 
             payload = {
-                "foto": link_imagem_final,
+                "foto": link_imagem_final if link_imagem_final else "sem_foto",
                 "texto": texto_cliente.strip()
             }
             
-            with st.spinner("🤖 O especialista OGNET está analisando seu caso... Por favor, aguarde."):
+            with st.spinner("🤖 O especialista OGNET está analisando sua foto e descrição... Por favor, aguarde."):
                 try:
                     headers = {"Content-Type": "application/json"}
+                    # Alterado aqui: usando json=payload para manter a mesma consistência do Caso 2
                     response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
                     
                     if response.status_code == 200:
@@ -162,9 +163,9 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
                         st.balloons()
                     else:
-                        st.error(f"Houve um problema no servidor de IA. (Código: {response.status_code})")
+                        st.error(f"Houve um problema no servidor de IA ao processar a foto. (Código: {response.status_code})")
                 except requests.exceptions.RequestException:
-                    st.error("Não foi possível conectar ao motor de IA.")
+                    st.error("Não foi possível conectar ao motor de IA para envio da foto.")
                     
         # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETO) ---
         else:
