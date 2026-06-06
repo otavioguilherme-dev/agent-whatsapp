@@ -30,7 +30,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 try:
-    st.image("	https://ognetborrachas.streamlit.app/~/+/media/38265db37548b0d424994d0517a2b3ae.jpg", width=200)
+    st.image("https://ognetborrachas.streamlit.app/~/+/media/38265db37548b0d424994d0517a2b3ae.jpg", width=200)
 except Exception:
     pass  
 
@@ -211,14 +211,26 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
                 st.balloons()
                 
-            # Passo C: SE NÃO ACHOU SKU, PLANILHA FALHOU -> CHAMA A IA PARA SUPORTE TÉCNICO!
-            if response.status_code == 200:
+            # Passo C: SE NÃO ACHOU SKU, PLANILHA FALHOU -> DISPARA O WEBHOOK PARA A IA!
+            else:
+                payload = {
+                    "foto": "sem_foto",
+                    "texto": texto_cliente.strip()
+                }
+                
+                with st.spinner("🤖 Encaminhando para o Especialista OGNET... Por favor, aguarde."):
+                    try:
+                        headers = {"Content-Type": "application/json"}
+                        # Linha crucial que estava faltando: envia os dados ao Make
+                        response_ia_texto = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+                        
+                        if response_ia_texto.status_code == 200:
                             resposta_ia = ""
                             try:
-                                resposta_json = response.json()
-                                resposta_ia = resposta_json.get("resposta_ia", response.text)
+                                resposta_json = response_ia_texto.json()
+                                resposta_ia = resposta_json.get("resposta_ia", response_ia_texto.text)
                             except Exception:
-                                resposta_ia = response.text
+                                resposta_ia = response_ia_texto.text
                             
                             # --- EXTRATOR AVANÇADO ANTI-BAGUNÇA (JSON/CANDIDATES) ---
                             if isinstance(resposta_ia, str):
@@ -226,7 +238,6 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                 if '"text":' in resposta_ia or '"parts":' in resposta_ia:
                                     valores_texto = re.findall(r'"text"\s*:\s*"([^"]+)"', resposta_ia)
                                     if valores_texto:
-                                        # Junta todas as partes de texto reais encontradas na estrutura
                                         resposta_ia = "\n".join(valores_texto)
                                 
                                 # Se o JSON veio aninhado num campo "result" ou "RESPOSTA_IA"
@@ -237,27 +248,31 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                     except Exception:
                                         pass
 
-                                # Corta metadados conhecidos que quebram o final da resposta
+                                # Corta metadados conhecidos do final da resposta
                                 for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
                                     if delimitador in resposta_ia:
                                         resposta_ia = resposta_ia.split(delimitador, 1)[0]
                                 
-                                # Limpa formatações de escape vindas do JSON
+                                # Limpa formatações de quebra de linha vinda do JSON
                                 resposta_ia = resposta_ia.replace('\\n', '\n')
                                 resposta_ia = resposta_ia.replace('\\"', '"')
                                 resposta_ia = resposta_ia.replace('\\t', '    ')
                                 resposta_ia = resposta_ia.strip()
                                 
-                                # Remove aspas extras no início e fim se sobrarem
                                 if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
                                 if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
                             
-                            # Exibe a resposta final com o passo a passo completo
+                            # Desenha a resposta limpa na tela
                             espaco_resposta = st.empty()
                             with espaco_resposta.container():
                                 st.success("Análise concluída!")
                                 st.subheader("📋 Resposta do Especialista Otávio Guilherme - OGNET BORRACHAS:")
                                 st.markdown(resposta_ia)
-                                
-           else:
-                st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
+                        else:
+                            st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response_ia_texto.status_code})")
+                    except requests.exceptions.RequestException:
+                        st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
+
+# Elementos estáticos do rodapé (Totalmente isolados fora das condições do botão)
+st.divider()
+st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
