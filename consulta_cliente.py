@@ -30,7 +30,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 try:
-    st.image("logo.jpg", width=200)
+    st.image("https://ognet-suporte.streamlit.app/logo.jpg", width=200)
 except Exception:
     pass  
 
