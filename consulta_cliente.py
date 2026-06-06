@@ -173,7 +173,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 except requests.exceptions.RequestException:
                     st.error("Não foi possível conectar ao motor de IA.")
                     
-        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETO) ---
+       # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETO) ---
         else:
             sku_encontrado = None
             medida_encontrada = None
@@ -209,7 +209,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 st.subheader("📋 Resposta do Especialista OGNET:")
                 st.write(f"Olá! Localizei o modelo **{texto_cliente.strip()}** diretamente em nosso catálogo de gaxetas.")
                 st.markdown("---")
-                st.markdown(f"### 🎯 Produto Recomendado:")
+                st.markdown(f"### 🎯 Produto Recommended:")
                 st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
                 st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
                 st.balloons()
@@ -224,7 +224,6 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 with st.spinner("🤖 Encaminhando para o Especialista OGNET... Por favor, aguarde."):
                     try:
                         headers = {"Content-Type": "application/json"}
-                        # Linha crucial que estava faltando: envia os dados ao Make
                         response_ia_texto = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
                         
                         if response_ia_texto.status_code == 200:
@@ -256,7 +255,8 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                     if delimitador in resposta_ia:
                                         resposta_ia = resposta_ia.split(delimitador, 1)[0]
                                 
-                                # Limpa formatações de quebra de linha vinda do JSON
+                                # --- AQUI ESTÁ A CORREÇÃO DAS BARRAS INVERTIDAS DO GEMINI ---
+                                resposta_ia = resposta_ia.replace('\\ ', ' ')
                                 resposta_ia = resposta_ia.replace('\\n', '\n')
                                 resposta_ia = resposta_ia.replace('\\"', '"')
                                 resposta_ia = resposta_ia.replace('\\t', '    ')
