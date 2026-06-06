@@ -117,14 +117,13 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
             
             with st.spinner("🤖 O especialista OGNET está analisando sua foto e descrição... Por favor, aguarde."):
                 try:
-                    # Força cabeçalho limpo para requisição textual pura de JSON estruturado
-                    headers = {"Content-Type": "application/json"}
-                    
-                    # ADICIONADO timeout=60: Espera até 60 segundos para o Make processar a imagem sem derrubar a conexão
+                    headers = {"Content-Type": "application/json; charset=utf-8"}
                     response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers, timeout=60)
                     
                     if response.status_code == 200:
-                        resposta_ia = limpar_resposta_ia(response.text)
+                        # Força decodificação correta em UTF-8 para evitar caracteres corrompidos
+                        conteudo_texto = response.content.decode('utf-8', errors='ignore')
+                        resposta_ia = limpar_resposta_ia(conteudo_texto)
                         
                         sku_encontrado = None
                         medida_encontrada = None
@@ -163,9 +162,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
                         st.balloons()
                     else:
-                        st.error(f"O servidor do especialista retornou um aviso. (Código: {response.status_code})")
-                except requests.exceptions.Timeout:
-                    st.error("O motor de IA demorou muito para responder a imagem. Verifique o cenário no Make.")
+                        st.error(f"Houve um problema no servidor de IA ao processar a foto. (Código: {response.status_code})")
                 except requests.exceptions.RequestException:
                     st.error("Não foi possível conectar ao motor de IA para envio da foto.")
                     
@@ -215,11 +212,12 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 
                 with st.spinner("🤖 Encaminhando para o Especialista OGNET... Por favor, aguarde."):
                     try:
-                        headers = {"Content-Type": "application/json"}
-                        response_ia_texto = requests.post(WEBHOOK_URL, json=payload, headers=headers, timeout=30)
+                        headers = {"Content-Type": "application/json; charset=utf-8"}
+                        response_ia_texto = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers, timeout=30)
                         
                         if response_ia_texto.status_code == 200:
-                            resposta_ia = limpar_resposta_ia(response_ia_texto.text)
+                            conteudo_texto_puro = response_ia_texto.content.decode('utf-8', errors='ignore')
+                            resposta_ia = limpar_resposta_ia(conteudo_texto_puro)
                             
                             espaco_resposta = st.empty()
                             with espaco_resposta.container():
