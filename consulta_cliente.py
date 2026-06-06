@@ -212,18 +212,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 st.balloons()
                 
             # Passo C: SE NÃO ACHOU SKU, PLANILHA FALHOU -> CHAMA A IA PARA SUPORTE TÉCNICO!
-            else:
-                payload = {
-                    "foto": "sem_foto",
-                    "texto": texto_cliente.strip()
-                }
-                with st.spinner("🤖 Encaminhando para o Especialista OGNET..."):
-                    try:
-                        headers = {"Content-Type": "application/json"}
-                        # REQUISIÇÃO CORRIGIDA AQUI:
-                        response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
-                        
-                        if response.status_code == 200:
+         if response.status_code == 200:
                             resposta_ia = ""
                             try:
                                 resposta_json = response.json()
@@ -231,41 +220,44 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             except Exception:
                                 resposta_ia = response.text
                             
-                            # Tratamento para limpar strings e remover metadados (JSON bruto do Gemini)
+                            # --- EXTRATOR AVANÇADO ANTI-BAGUNÇA (JSON/CANDIDATES) ---
                             if isinstance(resposta_ia, str):
-                                if '"result":' in resposta_ia:
+                                # Se o Make enviou a estrutura bruta da API (candidates/parts)
+                                if '"text":' in resposta_ia or '"parts":' in resposta_ia:
+                                    valores_texto = re.findall(r'"text"\s*:\s*"([^"]+)"', resposta_ia)
+                                    if valores_texto:
+                                        # Junta todas as partes de texto reais encontradas na estrutura
+                                        resposta_ia = "\n".join(valores_texto)
+                                
+                                # Se o JSON veio aninhado num campo "result" ou "RESPOSTA_IA"
+                                elif '"result":' in resposta_ia or '"RESPOSTA_IA":' in resposta_ia:
                                     try:
                                         dados_internos = json.loads(resposta_ia.strip())
-                                        resposta_ia = dados_internos.get("result", resposta_ia)
+                                        resposta_ia = dados_internos.get("result", dados_internos.get("RESPOSTA_IA", resposta_ia))
                                     except Exception:
-                                        if '"result":"' in resposta_ia:
-                                            resposta_ia = resposta_ia.split('"result":"', 1)[1]
-                                
-                                # Guilhotina de Metadados: Elimina chaves residuais de tokens e logs da API
-                                for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
+                                        pass
+
+                                # Corta metadados conhecidos que quebram o final da resposta
+                                for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
                                     if delimitador in resposta_ia:
                                         resposta_ia = resposta_ia.split(delimitador, 1)[0]
                                 
-                                # Formatação correta das quebras de linha e aspas para Markdown
+                                # Limpa formatações de escape vindas do JSON
                                 resposta_ia = resposta_ia.replace('\\n', '\n')
                                 resposta_ia = resposta_ia.replace('\\"', '"')
+                                resposta_ia = resposta_ia.replace('\\t', '    ')
                                 resposta_ia = resposta_ia.strip()
                                 
+                                # Remove aspas extras no início e fim se sobrarem
                                 if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
                                 if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
                             
-                            # Desenha a resposta estática limpa
+                            # Exibe a resposta final com o passo a passo completo
                             espaco_resposta = st.empty()
                             with espaco_resposta.container():
                                 st.success("Análise concluída!")
-                                st.subheader("📋 Resposta do Especialista OGNET:")
+                                st.subheader("📋 Resposta do Especialista Otávio Guilherme - OGNET BORRACHAS:")
                                 st.markdown(resposta_ia)
                                 
                         else:
                             st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response.status_code})")
-                    except requests.exceptions.RequestException:
-                        st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
-
-# Elementos estáticos do rodapé (Totalmente isolados fora das condições do botão)
-st.divider()
-st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
