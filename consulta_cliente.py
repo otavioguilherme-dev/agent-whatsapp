@@ -144,16 +144,17 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             except Exception as e:
                                 st.error(f"Erro ao processar busca: {e}")
 
-                        # --- ULTRA LIMPEZA ANTI-ESCAPE (ROTA COM FOTO) ---
+                        # --- CORREÇÃO CIRÚRGICA DE TEXTO (ROTA COM FOTO) ---
                         if isinstance(resposta_ia, str):
                             for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
                                 if delimitador in resposta_ia:
                                     resposta_ia = resposta_ia.split(delimitador, 1)[0]
                             
-                            # Força codificação crua para capturar qualquer tipo de escape oblíquo
-                            resposta_ia = resposta_ia.encode('utf-8', 'ignore').decode('unicode_escape', 'ignore')
-                            resposta_ia = re.sub(r'\\+', '', resposta_ia)
-                            resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"').strip()
+                            # Trata quebras literais primeiro, mantendo a codificação limpa
+                            resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"')
+                            # Limpa qualquer tipo de barra invertida residual do JSON antes de rendering
+                            resposta_ia = resposta_ia.replace('\\', '')
+                            resposta_ia = resposta_ia.strip()
                             
                             if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
                             if resposta_ia.endswith('"'): resposta_ia = resposta_ia[:-1]
@@ -257,18 +258,14 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                     if delimitador in resposta_ia:
                                         resposta_ia = resposta_ia.split(delimitador, 1)[0]
                                 
-                                # --- TRATAMENTO AGRESSIVO ANTI-CORTES DE ESCAPE ---
-                                # 1. Converte e limpa escapes de nível binário/unicode do JSON
-                                try:
-                                    resposta_ia = resposta_ia.encode('utf-8', 'ignore').decode('unicode_escape', 'ignore')
-                                except Exception:
-                                    pass
+                                # --- TRATAMENTO CIRÚRGICO DE TEXTO (ROTA TEXTO DIRETO) ---
+                                # Substitui quebras literais de string primeiro
+                                resposta_ia = resposta_ia.replace('\\n', '\n')
+                                resposta_ia = resposta_ia.replace('\\"', '"')
+                                resposta_ia = resposta_ia.replace('\\t', '    ')
                                 
-                                # 2. Remove absolutamente qualquer barra invertida literal remanescente
-                                resposta_ia = re.sub(r'\\+', '', resposta_ia)
-                                
-                                # 3. Restaura quebras de linha e aspas limpas padrões
-                                resposta_ia = resposta_ia.replace('\n', '\n')
+                                # Elimina qualquer barra literal que sobrou e que quebraria o markdown
+                                resposta_ia = resposta_ia.replace('\\', '')
                                 resposta_ia = resposta_ia.strip()
                                 
                                 if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
