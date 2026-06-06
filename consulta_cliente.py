@@ -51,32 +51,33 @@ texto_cliente = st.text_area(
     key="relato_unico"
 )
 
-def limpar_resposta_ia(texto_bruto):
+def def limpar_resposta_ia(texto_bruto):
     if not isinstance(texto_bruto, str):
         return ""
     
     texto = texto_bruto.strip()
     
-    # 1. Remove os cabeçalhos de JSON brutos do Make logo no início se existirem
-    if texto.startswith('{"resposta_ia":"'):
-        texto = texto.split('{"resposta_ia":"', 1)[1]
-    elif texto.startswith('{"result":"'):
-        texto = texto.split('{"result":"', 1)[1]
+    # 1. Remove qualquer combinação de sujeira de JSON/Result duplicado no início
+    # Remove {"resposta_ia": ou {"result":
+    texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*"', '', texto)
+    # Remove o segundo nível se o Make duplicou: {"result": ou {"resposta_ia":
+    texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*"', '', texto)
     
-    # 2. Corta metadados residuais conhecidos que o Make injeta no fim do buffer
+    # 2. Corta metadados residuais conhecidos que o Make joga no fim do buffer
     for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
         if delimitador in texto:
             texto = texto.split(delimitador, 1)[0]
             
-    # 3. Restaura formatações e quebras de linha textuais literais vindas da API
+    # 3. Restaura formatações e quebras de linha textuais literais
     texto = texto.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ')
     
-    # 4. Remove chaves ou aspas finais que sobram por conta do corte do delimitador
+    # 4. Faxina final nas pontas para arrancar aspas e chaves órfãs
     texto = texto.strip()
-    if texto.endswith('"}'): texto = texto[:-2]
-    if texto.endswith('}'): texto = texto[:-1]
-    if texto.endswith('"'): texto = texto[:-1]
-    
+    while texto.endswith('}') or texto.endswith('"') or texto.endswith(']'):
+        if texto.endswith('}'): texto = texto[:-1].strip()
+        if texto.endswith('"'): texto = texto[:-1].strip()
+        if texto.endswith(']'): texto = texto[:-1].strip()
+        
     return texto.strip()
 
 
