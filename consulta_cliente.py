@@ -46,10 +46,47 @@ if foto_upload is not None:
     st.image(foto_upload, caption="Sua foto carregada.", width=300)
 
 texto_cliente = st.text_area(
-    "✍️ 2. Descreva o problema que esta ocorrendo com a sua borracha/instalação ou ou digite o modelo da geladeira/freezer que voce deseja comprar:",
+    "✍️ 2. Descreva o problem que esta ocorrendo com a sua borracha/instalação ou ou digite o modelo da geladeira/freezer que voce deseja comprar:",
     placeholder="Ex: Minha geladeira é o modelo BRM44B, qual o modelo devo comprar? ou troquei a borracha mas o ima é fraco",
     key="relato_unico"
 )
+
+# Função auxiliar para extrair e limpar cirurgicamente o texto gerado
+def limpar_resposta_ia(texto_bruto):
+    if not isinstance(texto_bruto, str):
+        return ""
+    
+    texto = texto_bruto.strip()
+    
+    # 1. Se vier envelopado em estrutura de objeto JSON ("result" ou "resposta_ia")
+    for chave in ['"resposta_ia"', '"result"']:
+        if chave in texto:
+            # Captura tudo o que estiver dentro das aspas do valor da chave
+            match = re.search(rf'{chave}\s*:\s*"(.*)"', texto, re.DOTALL)
+            if match:
+                texto = match.group(1)
+                break
+            else:
+                # Fallback caso venha mal formatado mas contenha o padrão inicial
+                texto = re.sub(rf'\{{\s*{chave}\s*:\s*"', '', texto)
+
+    # 2. Corta metadados residuais conhecidos que o Make joga no fim do buffer
+    for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
+        if delimitador in texto:
+            texto = texto.split(delimitador, 1)[0]
+            
+    # 3. Restaura formatações e quebras de linha textuais literais do JSON
+    texto = texto.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ')
+    
+    # 4. Remove aspas órfãs que sobram nas extremidades após os cortes
+    texto = texto.strip()
+    if texto.startswith('"'): texto = texto[1:]
+    if texto.endswith('"'): texto = texto[:-1]
+    if texto.endswith('}'): texto = texto[:-1].strip()
+    if texto.endswith('"'): texto = texto[:-1]
+    
+    return texto.strip()
+
 
 if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_container_width=True):
     link_imagem_final = ""
@@ -93,20 +130,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
                     
                     if response.status_code == 200:
-                        # Força leitura como texto puro ignorando quebras de JSON do Make
-                        resposta_ia = response.text
-                        
-                        # Se o Make mandou o JSON envelopado, extrai via regex sem usar json.loads
-                        if '"resposta_ia":' in resposta_ia:
-                            match_texto = re.search(r'"resposta_ia"\s*:\s*"(.*)"', resposta_ia, re.DOTALL)
-                            if match_texto:
-                                resposta_ia = match_texto.group(1)
-                        
-                        # Limpezas de segurança para formatação estável
-                        resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"').strip()
-                        for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
-                            if delimitador in resposta_ia:
-                                resposta_ia = resposta_ia.split(delimitador, 1)[0]
+                        resposta_ia = limpar_resposta_ia(response.text)
                         
                         sku_encontrado = None
                         medida_encontrada = None
@@ -199,25 +223,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                         response_ia_texto = requests.post(WEBHOOK_URL, json=payload, headers=headers)
                         
                         if response_ia_texto.status_code == 200:
-                            # Captura como texto bruto para evitar a quebra do interpretador JSON
-                            resposta_ia = response_ia_texto.text
-                            
-                            # Tratamento via Regex extraindo o conteúdo interno de 'resposta_ia'
-                            if '"resposta_ia":' in resposta_ia:
-                                match_texto = re.search(r'"resposta_ia"\s*:\s*"(.*)"', resposta_ia, re.DOTALL)
-                                if match_texto:
-                                    resposta_ia = match_texto.group(1)
-                            
-                            # Limpeza de escape sequences padrão
-                            resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ').strip()
-                            
-                            # Corta metadados residuais do fluxo
-                            for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
-                                if delimitador in resposta_ia:
-                                    resposta_ia = resposta_ia.split(delimitador, 1)[0]
-                                    
-                            if resposta_ia.endswith('"'): 
-                                resposta_ia = resposta_ia[:-1]
+                            resposta_ia = limpar_resposta_ia(response_ia_texto.text)
                             
                             espaco_resposta = st.empty()
                             with espaco_resposta.container():
@@ -225,7 +231,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                 st.subheader("📋 Resposta do Especialista Otávio Guilherme - OGNET BORRACHAS:")
                                 st.markdown(resposta_ia)
                         else:
-                            st.error(f"Houve uma oscilação no servidor de suporte. (Código: {response_ia_texto.status_code})")
+                            st.error(f"Houve um problema no servidor de suporte. (Código: {response_ia_texto.status_code})")
                     except requests.exceptions.RequestException:
                         st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
 
