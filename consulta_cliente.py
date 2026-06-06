@@ -51,7 +51,7 @@ texto_cliente = st.text_area(
     key="relato_unico"
 )
 
-def def limpar_resposta_ia(texto_bruto):
+def limpar_resposta_ia(texto_bruto):
     if not isinstance(texto_bruto, str):
         return ""
     
