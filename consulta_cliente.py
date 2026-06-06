@@ -16,8 +16,6 @@ st.set_page_config(
 # --- CONFIGURAÇÕES DE INTEGRAÇÃO ---
 WEBHOOK_URL = "https://hook.us2.make.com/3jdepfa2nlkipkyjj44qm2pmva1yndbi"
 IMGBB_API_KEY = "c303da0c70a1655c79f00832f7b1456d"
-
-# Nome do seu arquivo que você subiu no GitHub
 ARQUIVO_BANCO_DADOS = "base_gaxetas.xlsx" 
 
 # Estilização para esconder menus padrões
@@ -38,16 +36,16 @@ st.title("⚡ Especialista Técnico Virtual da OGNET BORRACHAS")
 st.markdown("Seja bem-vindo ao portal de apoio e suporte da **OGNET BORRACHAS**.")
 st.divider()
 
-st.subheader("📋 Envie os dados do produto que voce deseja comprar ou obter suporte")
+st.subheader("📋 Envie os dados do produto que você deseja comprar ou obter suporte")
 
-foto_upload = st.file_uploader("📸 1. Selecione ou tire uma foto nítida (da etiqueta com o modelo comercial ou do problema que esta ocorrendo na sua borracha):", type=["png", "jpg", "jpeg"])
+foto_upload = st.file_uploader("📸 1. Selecione ou tire uma foto nítida (da etiqueta com o modelo comercial ou do problema):", type=["png", "jpg", "jpeg"])
 
 if foto_upload is not None:
     st.image(foto_upload, caption="Sua foto carregada.", width=300)
 
 texto_cliente = st.text_area(
-    "✍️ 2. Descreva o problema que esta ocorrendo com a sua borracha/instalação ou ou digite o modelo da geladeira/freezer que voce deseja comprar:",
-    placeholder="Ex: Minha geladeira é o modelo BRM44B, qual o modelo devo comprar? ou troquei a borracha mas o ima é fraco",
+    "✍️ 2. Descreva o problema que está ocorrendo ou digite o modelo da geladeira/freezer:",
+    placeholder="Ex: Minha geladeira é o modelo BRM44B, qual o modelo devo comprar? ou troquei a borracha mas o ímã é fraco",
     key="relato_unico"
 )
 
@@ -57,9 +55,9 @@ def limpar_resposta_ia(texto_bruto):
     
     texto = texto_bruto.strip()
     
-    # 1. Remove qualquer combinação de sujeira de JSON/Result duplicado no início
-    texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*"', '', texto)
-    texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*"', '', texto)
+    # 1. Remove sujeiras de JSON duplicado no início que o Make possa enviar
+    texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
+    texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
     
     # 2. Corta metadados residuais conhecidos que o Make joga no fim do buffer
     for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
@@ -71,10 +69,9 @@ def limpar_resposta_ia(texto_bruto):
     
     # 4. Faxina final nas pontas para arrancar aspas e chaves órfãs
     texto = texto.strip()
-    while texto.endswith('}') or texto.endswith('"') or texto.endswith(']'):
-        if texto.endswith('}'): texto = texto[:-1].strip()
-        if texto.endswith('"'): texto = texto[:-1].strip()
-        if texto.endswith(']'): texto = texto[:-1].strip()
+    while texto.endswith('}') or texto.endswith('"') or texto.endswith("'") or texto.endswith(']'):
+        if texto.endswith('}') or texto.endswith(']'): texto = texto[:-1].strip()
+        if texto.endswith('"') or texto.endswith("'"): texto = texto[:-1].strip()
         
     return texto.strip()
 
@@ -88,7 +85,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
         prosseguir = False
         
     if prosseguir:
-        # --- CASO 1: O CLIENTE ENVIOU UMA FOTO (CHAMA A IA + EXCEL) ---
+        # --- CASO 1: O CLIENTE ENVIOU UMA FOTO ---
         if foto_upload is not None:
             with st.spinner("🤖 Otimizando sua imagem..."):
                 try:
@@ -107,23 +104,22 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     
                     if res_imgbb.status_code == 200 and res_data.get("success"):
                         link_imagem_final = res_data["data"]["url"]
-                except Exception:
-                    pass
+                except Exception as e:
+                    st.error(f"Erro ao processar imagem: {e}")
 
-            payload = {
+            # ATENÇÃO: Formato de payload estruturado bruto para o fluxo de foto
+            payload_foto = {
                 "foto": link_imagem_final if link_imagem_final else "sem_foto",
                 "texto": texto_cliente.strip()
             }
             
             with st.spinner("🤖 O especialista OGNET está analisando sua foto e descrição... Por favor, aguarde."):
                 try:
-                    headers = {"Content-Type": "application/json; charset=utf-8"}
-                    response = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers, timeout=60)
+                    # Envia como JSON puro para o Make não quebrar a leitura da URL da imagem
+                    response = requests.post(WEBHOOK_URL, json=payload_foto, timeout=45)
                     
                     if response.status_code == 200:
-                        # Força decodificação correta em UTF-8 para evitar caracteres corrompidos
-                        conteudo_texto = response.content.decode('utf-8', errors='ignore')
-                        resposta_ia = limpar_resposta_ia(conteudo_texto)
+                        resposta_ia = limpar_resposta_ia(response.text)
                         
                         sku_encontrado = None
                         medida_encontrada = None
@@ -162,17 +158,18 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
                         st.balloons()
                     else:
-                        st.error(f"Houve um problema no servidor de IA ao processar a foto. (Código: {response.status_code})")
+                        st.error(f"Erro no servidor de IA. (Código: {response.status_code})")
                 except requests.exceptions.RequestException:
-                    st.error("Não foi possível conectar ao motor de IA para envio da foto.")
+                    st.error("Não foi possível conectar ao motor de IA para processar a foto.")
                     
-        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETO) ---
+        # --- CASO 2: O CLIENTE APENAS DIGITOU TEXTO ---
         else:
             sku_encontrado = None
             medida_encontrada = None
             marca_encontrada = None
             texto_busca_cliente = texto_cliente.upper().strip()
             
+            # 1. Executa primeiro a validação no banco de dados Excel
             if os.path.exists(ARQUIVO_BANCO_DADOS):
                 with st.spinner("🔍 Verificando se é uma consulta de modelo..."):
                     try:
@@ -195,6 +192,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     except Exception:
                         pass
             
+            # Se achou o modelo direto no Excel, exibe as especificações e encerra
             if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
                 st.success("Busca concluída!")
                 st.subheader("📋 Resposta do Especialista OGNET:")
@@ -204,26 +202,24 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
                 st.balloons()
                 
+            # 2. Se NÃO for um modelo comercial puro, chama a IA para suporte/análise de problemas
             else:
-                payload = {
+                payload_texto = {
                     "foto": "sem_foto",
                     "texto": texto_cliente.strip()
                 }
                 
                 with st.spinner("🤖 Encaminhando para o Especialista OGNET... Por favor, aguarde."):
                     try:
-                        headers = {"Content-Type": "application/json; charset=utf-8"}
-                        response_ia_texto = requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers, timeout=30)
+                        # Envio padrão original isolado que não causa erro 500
+                        response_ia_texto = requests.post(WEBHOOK_URL, json=payload_texto, timeout=30)
                         
                         if response_ia_texto.status_code == 200:
-                            conteudo_texto_puro = response_ia_texto.content.decode('utf-8', errors='ignore')
-                            resposta_ia = limpar_resposta_ia(conteudo_texto_puro)
+                            resposta_ia = limpar_resposta_ia(response_ia_texto.text)
                             
-                            espaco_resposta = st.empty()
-                            with espaco_resposta.container():
-                                st.success("Análise concluída!")
-                                st.subheader("📋 Resposta do Especialista Otávio Guilherme - OGNET BORRACHAS:")
-                                st.markdown(resposta_ia)
+                            st.success("Análise concluída!")
+                            st.subheader("📋 Resposta do Especialista Otávio Guilherme - OGNET BORRACHAS:")
+                            st.markdown(resposta_ia)
                         else:
                             st.error(f"Houve um problema no servidor de suporte. (Código: {response_ia_texto.status_code})")
                     except requests.exceptions.RequestException:
