@@ -144,13 +144,14 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             except Exception as e:
                                 st.error(f"Erro ao processar busca: {e}")
 
-                        # if isinstance(resposta_ia, str):
+                        # --- ULTRA LIMPEZA ANTI-ESCAPE (ROTA COM FOTO) ---
+                        if isinstance(resposta_ia, str):
                             for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"']:
                                 if delimitador in resposta_ia:
                                     resposta_ia = resposta_ia.split(delimitador, 1)[0]
                             
-                            # --- CORREÇÃO DA BARRA INVERTIDA ---
-                            resposta_ia = resposta_ia.replace('\\ ', ' ')  # Corrige o escape de espaço
+                            # Remove barras invertidas perdidas antes de espaços, asteriscos ou letras
+                            resposta_ia = re.sub(r'\\(?=[*\s\w])', '', resposta_ia)
                             resposta_ia = resposta_ia.replace('\\n', '\n').replace('\\"', '"').strip()
                             
                             if resposta_ia.startswith('"'): resposta_ia = resposta_ia[1:]
@@ -173,7 +174,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 except requests.exceptions.RequestException:
                     st.error("Não foi possível conectar ao motor de IA.")
                     
-       # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETO) ---
+        # --- CASO 2: O CLIENTE APENAS DIGITOU O TEXTO (SUPORTE TÉCNICO DIRETO) ---
         else:
             sku_encontrado = None
             medida_encontrada = None
@@ -209,7 +210,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 st.subheader("📋 Resposta do Especialista OGNET:")
                 st.write(f"Olá! Localizei o modelo **{texto_cliente.strip()}** diretamente em nosso catálogo de gaxetas.")
                 st.markdown("---")
-                st.markdown(f"### 🎯 Produto Recommended:")
+                st.markdown(f"### 🎯 Produto Recomendado:")
                 st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
                 st.markdown("👉 *Confirme se as medidas batem com a sua gaxeta antiga antes de finalizar a compra.*")
                 st.balloons()
@@ -255,8 +256,8 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                                     if delimitador in resposta_ia:
                                         resposta_ia = resposta_ia.split(delimitador, 1)[0]
                                 
-                                # --- AQUI ESTÁ A CORREÇÃO DAS BARRAS INVERTIDAS DO GEMINI ---
-                                resposta_ia = resposta_ia.replace('\\ ', ' ')
+                                # --- ULTRA LIMPEZA ANTI-ESCAPE (ROTA TEXTO DIRETO) ---
+                                resposta_ia = re.sub(r'\\(?=[*\s\w])', '', resposta_ia)
                                 resposta_ia = resposta_ia.replace('\\n', '\n')
                                 resposta_ia = resposta_ia.replace('\\"', '"')
                                 resposta_ia = resposta_ia.replace('\\t', '    ')
@@ -267,7 +268,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                             
                             # Desenha a resposta limpa na tela
                             espaco_resposta = st.empty()
-                            with espaco_resposta.container():
+                            with arrows_container := espaco_resposta.container():
                                 st.success("Análise concluída!")
                                 st.subheader("📋 Resposta do Especialista Otávio Guilherme - OGNET BORRACHAS:")
                                 st.markdown(resposta_ia)
