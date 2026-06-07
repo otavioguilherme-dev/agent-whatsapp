@@ -8,20 +8,20 @@ import re
 st.set_page_config(
     page_title="Técnico de Instalação - OGNET",
     page_icon="🔧",
-    layout="centered"  # Garante o layout em coluna única centralizada
+    layout="centered"
 )
 
 # --- CONFIGURAÇÕES DO WEBHOOK ---
 WEBHOOK_URL = "https://hook.us2.make.com/3jdepfa2nlkipkyjj44qm2pmva1yndbi"
 IMGBB_API_KEY = "c303da0c70a1655c79f00832f7b1456d"
 
-# Remove barras, menus padrões, oculta a sidebar e estiliza o card de resposta
+# Remove barras, menus padrões, oculta a sidebar e estiliza o card de resposta técnica
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    [data-testid="stSidebar"] {display: none;} /* Força o sumiço completo da barra lateral antiga */
+    [data-testid="stSidebar"] {display: none;} /* Força o sumiço completo da barra lateral */
     .resposta-card {
         background-color: #f8f9fa;
         border-left: 5px solid #FF4B4B;
@@ -42,24 +42,24 @@ st.title("🧰 Técnico de Instalação da OGNET BORRACHAS")
 st.markdown("Envie fotos da sua instalação ou digite aqui o seu problema ou dúvida que o nosso Técnico vai te ajudar a solucionar.")
 st.divider()
 
-# --- FLUXO EM COLUNA ÚNICA (UM EMBAIXO DO OUTRO) ---
+# --- FLUXO EM COLUNA ÚNICA (FOCADO EM SUPORTE PÓS-VENDA) ---
 st.subheader("📋 Painel de Suporte Técnico")
 
-# Passo 1: Upload da Imagem
-st.markdown("### 📸 1. Envio da Foto (Opcional)")
-st.caption("Tire ou anexe uma imagem nítida do problema na borracha (frestas, falta de magnetismo, folgas).")
+# Passo 1: Upload da Imagem do Problema
+st.markdown("### 📸 1. Envio da Foto do Problema (Opcional)")
+st.caption("Tire ou anexe uma imagem nítida do problema constatado (Ex: frestas na porta, borracha amassada, folgas).")
 foto_upload = st.file_uploader("Selecione a imagem do problema:", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
 
 if foto_upload is not None:
     st.image(foto_upload, caption="⚡ Foto do problema carregada com sucesso", width=400)
     st.divider()
 
-# Passo 2: Relato do Problema
+# Passo 2: Relato do Problema Técnico
 st.markdown("### ✍️ 2. O que está acontecendo?")
-st.caption("Descreva detalhadamente o defeito ou comportamento da gaxeta para guiar o nosso especialista.")
+st.caption("Descreva detalhadamente o comportamento da borracha na porta para guiar o nosso especialista técnico.")
 texto_cliente = st.text_area(
     "Relato do cliente:",
-    placeholder="Ex: Minha borracha está com uma fresta no canto superior direito após a instalação e o ímã parece não puxar...",
+    placeholder="Ex: Instalei a borracha nova hoje, mas ficou uma fresta de quase 1 centímetro no canto superior direito e o ímã parece não puxar forte o suficiente. Como resolver?",
     height=150,
     label_visibility="collapsed",
     key="relato_suporte"
@@ -73,12 +73,12 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
     prosseguir = True
     
     if not texto_cliente.strip() and foto_upload is None:
-        st.warning("Por favor, relate o problema por texto ou envie uma foto antes de continuar.")
+        st.warning("Por favor, relate o problema por texto ou envie uma foto do defeito antes de continuar.")
         prosseguir = False
         
     if prosseguir:
         if foto_upload is not None:
-            with st.spinner("🤖 Otimizando e fazendo upload da imagem..."):
+            with st.spinner("🤖 Analisando e enviando imagem do problema..."):
                 try:
                     file_bytes = foto_upload.read()
                     base64_image = base64.b64encode(file_bytes).decode('utf-8')
@@ -98,6 +98,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 except Exception as e:
                     st.error(f"Erro no processamento da imagem: {e}")
 
+        # Envio limpo focado em texto e link da foto para a IA
         payload = {
             "foto": link_imagem_final,
             "texto": texto_cliente.strip()
@@ -128,12 +129,12 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     resposta_ia = limpar_resposta_ia(response.text)
                     
                     if not resposta_ia.strip():
-                        st.warning("⚠️ O Make processou o chamado, mas a resposta retornou em branco. Verifique a configuração do seu Gemini no Make.")
+                        st.warning("⚠️ O sistema processou o chamado, mas o diagnóstico retornou vazio. Verifique a configuração no Make.")
                     else:
                         st.success("Diagnóstico Técnico Concluído!")
                         
                         st.markdown('<div class="resposta-card">', unsafe_allow_html=True)
-                        st.subheader("📋 Instruções e Soluções Recomendadas:")
+                        st.subheader("📋 Instruções Técnicas de Instalação:")
                         st.markdown(resposta_ia)
                         st.markdown('</div>', unsafe_allow_html=True)
                         st.balloons()
