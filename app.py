@@ -63,8 +63,8 @@ except Exception as e:
     # Caso o arquivo não seja encontrado por algum motivo, exibe o título em texto
     st.warning("Carregando cabeçalho técnico...")
 
-st.title("🧰 Técnico de Instalação da OGNET BORRACHAS")
-st.markdown("Envie fotos da sua instalação ou digite aqui o seu problema ou dúvida que o nosso Técnico vai te ajudar a solucionar.")
+st.title("🧰 Agente de IA para Suporte Técnico e Instalação - OGNET-BORRACHAS")
+st.markdown("Envie fotos da sua instalação ou digite aqui o seu problema ou dúvida que o nosso Especialista Técnico vai te ajudar a solucionar.")
 st.divider()
 
 # --- FLUXO EM COLUNA ÚNICA ---
@@ -80,8 +80,8 @@ if foto_upload is not None:
     st.divider()
 
 # Passo 2: Relato do Problema Técnico
-st.markdown("### ✍️ 2. O que está acontecendo?")
-st.caption("Descreva detalhadamente o comportamento da borracha na porta para guiar o nosso especialista técnico.")
+st.markdown("### ✍️ 2. O que está acontecendo? Explique aqui qual é o problema ou duvida!")
+st.caption("Descreva detalhadamente a duvida ou problema na sua borracha para guiar o nosso especialista técnico.")
 texto_cliente = st.text_area(
     "Relato do cliente:",
     placeholder="Ex: Instalei a borracha nova hoje, mas ficou uma fresta de quase 1 centímetro no canto superior direito...",
@@ -93,7 +93,7 @@ texto_cliente = st.text_area(
 st.markdown("<br>", unsafe_allow_html=True)
 
 # Botão de Ação (Largura Completa com cores dinâmicas da OGNET)
-if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_container_width=True):
+if st.button("🚀 Iniciar Análise do Especialista Técnico da OGNET BORRACHAS", type="primary", use_container_width=True):
     link_imagem_final = "sem_foto"
     prosseguir = True
     
