@@ -109,19 +109,32 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 return ""
             texto = texto_bruto.strip()
             
-            # Remove padrões estruturados de JSON como {"result":" ou {"resposta_ia":"
+            # Tenta decodificar nativamente como JSON (Método mais seguro)
+            try:
+                # Se o texto começar como um objeto JSON válido
+                if texto.startswith('{'):
+                    dados_json = json.loads(texto)
+                    if "result" in dados_json:
+                        return dados_json["result"].strip()
+                    if "resposta_ia" in dados_json:
+                        return dados_json["resposta_ia"].strip()
+            except Exception:
+                pass # Se der erro de parse, continua para a limpeza bruta abaixo
+
+            # Limpeza bruta caso o JSON venha malformado pelo Webhook
+            texto = re.sub(r'^\{\s*\\*"(resposta_ia|result)\\*"\s*:\s*\\*["\']', '', texto)
             texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
             
-            # Corta metadados adicionais do Make/Gemini se houverem
+            # Corta metadados adicionais do Make se houverem
             for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"']:
                 if delimitador in texto:
                     texto = texto.split(delimitador, 1)[0]
                     
-            # Corrige quebras de linha literais vindas do JSON
+            # Corrige quebras de linha e caracteres de escape
             texto = texto.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ')
             texto = texto.strip()
             
-            # Remove chaves ou aspas residuais que sobram no final do texto limpo
+            # Remove chaves, colchetes ou aspas residuais no final
             while texto.endswith('}') or texto.endswith('"') or texto.endswith("'") or texto.endswith(']'):
                 if texto.endswith('}') or texto.endswith(']'): texto = texto[:-1].strip()
                 if texto.endswith('"') or texto.endswith("'"): texto = texto[:-1].strip()
