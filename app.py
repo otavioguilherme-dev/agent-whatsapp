@@ -55,11 +55,13 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Cabeçalho Principal Centralizado
+# Cabeçalho Principal Centralizado com Logo Local
 try:
-    st.image("https://ognetborrachas.streamlit.app/~/+/media/LOGO_BANNER.jpg", width=150)
-except Exception:
-    pass  
+    # O Streamlit lê o arquivo "LOGO_BANNER.jpg" direto do seu diretório
+    st.image("LOGO_BANNER.jpg", width=350)
+except Exception as e:
+    # Caso o arquivo não seja encontrado por algum motivo, exibe o título em texto
+    st.warning("Carregando cabeçalho técnico...")
 
 st.title("🧰 Técnico de Instalação da OGNET BORRACHAS")
 st.markdown("Envie fotos da sua instalação ou digite aqui o seu problema ou dúvida que o nosso Técnico vai te ajudar a solucionar.")
