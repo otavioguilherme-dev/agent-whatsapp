@@ -58,7 +58,7 @@ st.markdown("""
 # Cabeçalho Principal Centralizado com Logo Local
 try:
     # O Streamlit lê o arquivo "LOGO_BANNER.jpg" direto do seu diretório
-    st.image("LOGO_BANNER.jpg", width=450)
+    st.image("LOGO_BANNER.jpg", width=550)
 except Exception as e:
     # Caso o arquivo não seja encontrado por algum motivo, exibe o título em texto
     st.warning("Carregando cabeçalho técnico...")
