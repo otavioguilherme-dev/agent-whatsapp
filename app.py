@@ -108,17 +108,24 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
             if not isinstance(texto_bruto, str):
                 return ""
             texto = texto_bruto.strip()
+            
+            # Remove padrões estruturados de JSON como {"result":" ou {"resposta_ia":"
             texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
             
+            # Corta metadados adicionais do Make/Gemini se houverem
             for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"']:
                 if delimitador in texto:
                     texto = texto.split(delimitador, 1)[0]
                     
+            # Corrige quebras de linha literais vindas do JSON
             texto = texto.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ')
             texto = texto.strip()
+            
+            # Remove chaves ou aspas residuais que sobram no final do texto limpo
             while texto.endswith('}') or texto.endswith('"') or texto.endswith("'") or texto.endswith(']'):
                 if texto.endswith('}') or texto.endswith(']'): texto = texto[:-1].strip()
                 if texto.endswith('"') or texto.endswith("'"): texto = texto[:-1].strip()
+                
             return texto.strip()
 
         with st.spinner("🤖 Encaminhando para o especialista técnico Otávio Guilherme... Por favor, aguarde."):
