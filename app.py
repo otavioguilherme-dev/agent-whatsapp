@@ -6,7 +6,7 @@ import re
 
 # Configuração visual da página (Modo centralizado tradicional)
 st.set_page_config(
-    page_title="Técnico de Instalação - OGNET",
+    page_title="Agente de IA para Técnico e Instalação - OGNET-BORRACHAS",
     page_icon="🔧",
     layout="centered"
 )
@@ -15,19 +15,42 @@ st.set_page_config(
 WEBHOOK_URL = "https://hook.us2.make.com/3jdepfa2nlkipkyjj44qm2pmva1yndbi"
 IMGBB_API_KEY = "c303da0c70a1655c79f00832f7b1456d"
 
-# Remove barras, menus padrões, oculta a sidebar e estiliza o card de resposta técnica
+# CUSTOMIZAÇÃO CORES OGNET (Baseado em LOGO_BANNER.jpg)
+# Azul Escuro: #1B2E7C | Laranja: #E96A23
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    [data-testid="stSidebar"] {display: none;} /* Força o sumiço completo da barra lateral */
+    [data-testid="stSidebar"] {display: none;}
+    
+    /* Customização do Botão Principal (Estilo OGNET) */
+    div.stButton > button:first-child {
+        background-color: #E96A23 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease !important;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #1B2E7C !important;
+        box-shadow: 0px 4px 10px rgba(27, 46, 124, 0.3) !important;
+    }
+    
+    /* Subtítulos em Azul Escuro */
+    h1, h2, h3 {
+        color: #1B2E7C !important;
+    }
+    
+    /* Card de Resposta com a borda Laranja OGNET e fundo suave */
     .resposta-card {
         background-color: #f8f9fa;
-        border-left: 5px solid #FF4B4B;
+        border-left: 6px solid #E96A23;
         padding: 25px;
         border-radius: 8px;
         margin-top: 20px;
+        box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -42,7 +65,7 @@ st.title("🧰 Técnico de Instalação da OGNET BORRACHAS")
 st.markdown("Envie fotos da sua instalação ou digite aqui o seu problema ou dúvida que o nosso Técnico vai te ajudar a solucionar.")
 st.divider()
 
-# --- FLUXO EM COLUNA ÚNICA (FOCADO EM SUPORTE PÓS-VENDA) ---
+# --- FLUXO EM COLUNA ÚNICA ---
 st.subheader("📋 Painel de Suporte Técnico")
 
 # Passo 1: Upload da Imagem do Problema
@@ -59,7 +82,7 @@ st.markdown("### ✍️ 2. O que está acontecendo?")
 st.caption("Descreva detalhadamente o comportamento da borracha na porta para guiar o nosso especialista técnico.")
 texto_cliente = st.text_area(
     "Relato do cliente:",
-    placeholder="Ex: Instalei a borracha nova hoje, mas ficou uma fresta de quase 1 centímetro no canto superior direito e o ímã parece não puxar forte o suficiente. Como resolver?",
+    placeholder="Ex: Instalei a borracha nova hoje, mas ficou uma fresta de quase 1 centímetro no canto superior direito...",
     height=150,
     label_visibility="collapsed",
     key="relato_suporte"
@@ -67,7 +90,7 @@ texto_cliente = st.text_area(
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Botão de Ação (Largura Completa)
+# Botão de Ação (Largura Completa com cores dinâmicas da OGNET)
 if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_container_width=True):
     link_imagem_final = "sem_foto"
     prosseguir = True
@@ -98,7 +121,6 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 except Exception as e:
                     st.error(f"Erro no processamento da imagem: {e}")
 
-        # Envio limpo focado em texto e link da foto para a IA
         payload = {
             "foto": link_imagem_final,
             "texto": texto_cliente.strip()
@@ -109,9 +131,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                 return ""
             texto = texto_bruto.strip()
             
-            # Tenta decodificar nativamente como JSON (Método mais seguro)
             try:
-                # Se o texto começar como um objeto JSON válido
                 if texto.startswith('{'):
                     dados_json = json.loads(texto)
                     if "result" in dados_json:
@@ -119,22 +139,18 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     if "resposta_ia" in dados_json:
                         return dados_json["resposta_ia"].strip()
             except Exception:
-                pass # Se der erro de parse, continua para a limpeza bruta abaixo
+                pass
 
-            # Limpeza bruta caso o JSON venha malformado pelo Webhook
             texto = re.sub(r'^\{\s*\\*"(resposta_ia|result)\\*"\s*:\s*\\*["\']', '', texto)
             texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
             
-            # Corta metadados adicionais do Make se houverem
             for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"']:
                 if delimitador in texto:
                     texto = texto.split(delimitador, 1)[0]
                     
-            # Corrige quebras de linha e caracteres de escape
             texto = texto.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ')
             texto = texto.strip()
             
-            # Remove chaves, colchetes ou aspas residuais no final
             while texto.endswith('}') or texto.endswith('"') or texto.endswith("'") or texto.endswith(']'):
                 if texto.endswith('}') or texto.endswith(']'): texto = texto[:-1].strip()
                 if texto.endswith('"') or texto.endswith("'"): texto = texto[:-1].strip()
@@ -151,7 +167,7 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     if not resposta_ia.strip():
                         st.warning("⚠️ O sistema processou o chamado, mas o diagnóstico retornou vazio. Verifique a configuração no Make.")
                     else:
-                        st.success("Diagnóstico Técnico Concluído!")
+                        st.success("Análise de Suporte Concluída!")
                         
                         st.markdown('<div class="resposta-card">', unsafe_allow_html=True)
                         st.subheader("📋 Instruções Técnicas de Instalação:")
