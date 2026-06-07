@@ -7,7 +7,7 @@ import re
 # Configuração visual da página (Modo centralizado tradicional)
 st.set_page_config(
     page_title="Agente de IA para Suporte Técnico e Instalação - OGNET-BORRACHAS",
-    page_icon="st.image("banner_ognet.png")",
+    page_icon="🔧",
     layout="centered"
 )
 
