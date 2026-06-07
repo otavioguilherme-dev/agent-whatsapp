@@ -2,23 +2,20 @@ import streamlit as st
 import requests
 import json
 import base64
-import pandas as pd
-import os
 import re
 
 # Configuração visual da página
 st.set_page_config(
-    page_title="Técnico IA-Virtual da OGNET BORRACHAS",
-    page_icon="⚡",
+    page_title="Suporte Técnico OGNET BORRACHAS",
+    page_icon="🔧",
     layout="centered"
 )
 
-# --- CONFIGURAÇÕES DE INTEGRAÇÃO ---
+# --- CONFIGURAÇÕES DO AGENTE DE SUPORTE ---
 WEBHOOK_URL = "https://hook.us2.make.com/3jdepfa2nlkipkyjj44qm2pmva1yndbi"
 IMGBB_API_KEY = "c303da0c70a1655c79f00832f7b1456d"
-ARQUIVO_BANCO_DADOS = "base_gaxetas.xlsx" 
 
-# Estilização para esconder menus padrões
+# Ocultar menus padrões do Streamlit
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -32,21 +29,21 @@ try:
 except Exception:
     pass  
 
-st.title("⚡ Especialista Técnico Virtual da OGNET BORRACHAS")
-st.markdown("Seja bem-vindo ao portal de apoio e suporte da **OGNET BORRACHAS**.")
+st.title("🔧 Especialista Técnico - OGNET BORRACHAS")
+st.markdown("Portal de apoio ao cliente. Envie fotos ou detalhes do seu problema de instalação para receber um diagnóstico na hora.")
 st.divider()
 
-st.subheader("📋 Envie os dados do produto que você deseja comprar ou obter suporte")
+st.subheader("📋 Descreva o problema ou envie uma foto da sua instalação")
 
-foto_upload = st.file_uploader("📸 1. Selecione ou tire uma foto nítida (da etiqueta com o modelo comercial ou do problema):", type=["png", "jpg", "jpeg"])
+foto_upload = st.file_uploader("📸 Caso queira, tire ou envie uma foto nítida do problema (frestas, folgas, borracha que não gruda):", type=["png", "jpg", "jpeg"])
 
 if foto_upload is not None:
     st.image(foto_upload, caption="Sua foto carregada.", width=300)
 
 texto_cliente = st.text_area(
-    "✍️ 2. Descreva o problema que está ocorrendo ou digite o modelo da geladeira/freezer:",
-    placeholder="Ex: Minha geladeira é o modelo BRM44B, qual o modelo devo comprar? ou troquei a borracha mas o ímã é fraco",
-    key="relato_unico"
+    "✍️ Relate o que está acontecendo com a sua borracha:",
+    placeholder="Ex: Troquei a borracha mas ficou uma fresta no canto superior, o que eu faço? ou o ímã está muito fraco.",
+    key="relato_suporte"
 )
 
 def limpar_resposta_ia(texto_bruto):
@@ -55,23 +52,15 @@ def limpar_resposta_ia(texto_bruto):
     
     texto = texto_bruto.strip()
     
-    # Se o Make devolveu um JSON estruturado com erro ou vazio, trata antes de limpar
-    if texto == '{"resposta_ia": ""}' or texto == '{"resposta_ia":""}':
-        return ""
-    
-    # 1. Remove sujeiras de JSON duplicado no início que o Make possa enviar
-    texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
+    # Remove marcações de chaves estruturadas que o Make envie por acidente
     texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
     
-    # 2. Corta metadados residuais conhecidos que o Make joga no fim do buffer
-    for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"', '"candidates"']:
+    for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"']:
         if delimitador in texto:
             texto = texto.split(delimitador, 1)[0]
             
-    # 3. Restaura formatações e quebras de linha textuais literais
     texto = texto.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ')
     
-    # 4. Faxina final nas pontas para arrancar aspas e chaves órfãs
     texto = texto.strip()
     while texto.endswith('}') or texto.endswith('"') or texto.endswith("'") or texto.endswith(']'):
         if texto.endswith('}') or texto.endswith(']'): texto = texto[:-1].strip()
@@ -80,18 +69,17 @@ def limpar_resposta_ia(texto_bruto):
     return texto.strip()
 
 
-if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_container_width=True):
-    link_imagem_final = ""
+if st.button("🚀 Solicitar Ajuda do Especialista OGNET", type="primary", use_container_width=True):
+    link_imagem_final = "sem_foto"
     prosseguir = True
     
     if not texto_cliente.strip() and foto_upload is None:
-        st.warning("Por favor, envie uma foto ou descreva seu problema antes de iniciar.")
+        st.warning("Por favor, envie uma foto ou descreva detalhadamente o problema.")
         prosseguir = False
         
     if prosseguir:
-        # --- CASO 1: O CLIENTE ENVIOU UMA FOTO ---
         if foto_upload is not None:
-            with st.spinner("🤖 Otimizando sua imagem..."):
+            with st.spinner("🤖 Processando imagem do problema..."):
                 try:
                     file_bytes = foto_upload.read()
                     base64_image = base64.b64encode(file_bytes).decode('utf-8')
@@ -109,130 +97,32 @@ if st.button("🚀 Iniciar Análise do Especialista OGNET", type="primary", use_
                     if res_imgbb.status_code == 200 and res_data.get("success"):
                         link_imagem_final = res_data["data"]["url"]
                 except Exception as e:
-                    st.error(f"Erro ao processar imagem: {e}")
+                    st.error(f"Erro no processamento visual: {e}")
 
-            # Monta o dicionário limpo
-            payload_foto = {
-                "foto": link_imagem_final if link_imagem_final else "sem_foto",
-                "texto": texto_cliente.strip()
-            }
-            
-            with st.spinner("🤖 O especialista OGNET está analisando sua foto e descrição... Por favor, aguarde."):
-                try:
-                    # Enviando como dados de formulário tradicional para o Webhook do Make processar corretamente as chaves nativas
-                    response = requests.post(WEBHOOK_URL, data=payload_foto, timeout=45)
+        # Payload limpo e direto enviado ao Make
+        payload = {
+            "foto": link_imagem_final,
+            "texto": texto_cliente.strip()
+        }
+        
+        with st.spinner("🤖 O especialista OGNET está analisando seu caso... Por favor, aguarde."):
+            try:
+                # Envio padrão estruturado via formulário de dados
+                response = requests.post(WEBHOOK_URL, data=payload, timeout=45)
+                
+                if response.status_code == 200:
+                    resposta_ia = limpar_resposta_ia(response.text)
                     
-                    if response.status_code == 200:
-                        resposta_ia = limpar_resposta_ia(response.text)
-                        
-                        # Se a IA retornou em branco, avisa o usuário sobre a configuração do Make
-                        if not resposta_ia.strip():
-                            st.warning("⚠️ A IA recebeu a foto, mas retornou uma resposta vazia. Certifique-se de que o módulo do Gemini dentro do Make está configurado para ler o link da imagem (Multimodal).")
-                            resposta_ia = "Não foi possível gerar a análise visual técnica. Por favor, descreva o modelo ou problema por texto."
-                        
-                        sku_encontrado = None
-                        medida_encontrada = None
-                        marca_encontrada = None
-                        
-                        if os.path.exists(ARQUIVO_BANCO_DADOS) and resposta_ia.strip():
-                            try:
-                                df = pd.read_excel(ARQUIVO_BANCO_DADOS)
-                                df = df.dropna(subset=['MODELO'])
-                                texto_completo = (texto_cliente + " " + resposta_ia).upper()
-                                df['MODELO_BUSCA'] = df['MODELO'].astype(str).str.upper().str.strip()
-                                
-                                match = pd.DataFrame()
-                                for idx, row in df.iterrows():
-                                    mod = row['MODELO_BUSCA']
-                                    if len(mod) < 2 or mod in ['NAN', '']: continue
-                                    if mod in ['UM', 'DE', 'A', 'O', 'E', 'PARA', 'COM', 'POR', 'TIPO', 'EM', 'S SUA']: continue
-                                    if re.search(r'\b' + re.escape(mod) + r'\b', texto_completo):
-                                        match = df.loc[[idx]]
-                                        break
-
-                                if not match.empty:
-                                    sku_encontrado = str(match.iloc[0].get('SKU', ''))
-                                    medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
-                                    marca_encontrada = str(match.iloc[0].get('MARCA', ''))
-                            except Exception:
-                                pass
-
-                        st.success("Análise concluída!")
-                        st.subheader("📋 Resposta do Especialista OGNET:")
-                        st.markdown(resposta_ia)
-                        
-                        if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
-                            st.markdown("---")
-                            st.markdown(f"### 🎯 Produto Recomendado:")
-                            st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
-                            st.balloons()
+                    if not resposta_ia.strip():
+                        st.warning("⚠️ O servidor técnico processou a requisição, mas a resposta retornou vazia. Verifique a rota ativa no Make.")
                     else:
-                        st.error(f"Erro no servidor de IA. (Código: {response.status_code})")
-                except requests.exceptions.RequestException:
-                    st.error("Não foi possível conectar ao motor de IA para processar a foto.")
-                    
-        # --- CASO 2: O CLIENTE APENAS DIGITOU TEXTO ---
-        else:
-            sku_encontrado = None
-            medida_encontrada = None
-            marca_encontrada = None
-            texto_busca_cliente = texto_cliente.upper().strip()
-            
-            # 1. Executa primeiro a validação no banco de dados Excel
-            if os.path.exists(ARQUIVO_BANCO_DADOS):
-                with st.spinner("🔍 Verificando se é uma consulta de modelo..."):
-                    try:
-                        df = pd.read_excel(ARQUIVO_BANCO_DADOS)
-                        df = df.dropna(subset=['MODELO'])
-                        df['MODELO_BUSCA'] = df['MODELO'].astype(str).str.upper().str.strip()
-                        
-                        match = pd.DataFrame()
-                        for idx, row in df.iterrows():
-                            mod = row['MODELO_BUSCA']
-                            if len(mod) < 2 or mod in ['NAN', '']: continue
-                            if mod in texto_busca_cliente:
-                                match = df.loc[[idx]]
-                                break
-                                
-                        if not match.empty:
-                            sku_encontrado = str(match.iloc[0].get('SKU', ''))
-                            medida_encontrada = str(match.iloc[0].get('MEDIDA', ''))
-                            marca_encontrada = str(match.iloc[0].get('MARCA', ''))
-                    except Exception:
-                        pass
-            
-            # Se achou o modelo direto no Excel, exibe as especificações e encerra
-            if sku_encontrado and sku_encontrado != 'nan' and sku_encontrado != 'None':
-                st.success("Busca concluída!")
-                st.subheader("📋 Resposta do Especialista OGNET:")
-                st.write(f"Olá! Localizei o modelo **{texto_cliente.strip()}** diretamente em nosso catálogo de gaxetas.")
-                st.markdown("---")
-                st.markdown(f"### 🎯 Produto Recomendado:")
-                st.success(f"**Código SKU:** {sku_encontrado} | **Medidas:** {medida_encontrada} ({marca_encontrada})")
-                st.balloons()
-                
-            # 2. Se NÃO for um modelo comercial puro, chama a IA para suporte/análise de problemas
-            else:
-                payload_texto = {
-                    "foto": "sem_foto",
-                    "texto": texto_cliente.strip()
-                }
-                
-                with st.spinner("🤖 Encaminhando para o Especialista OGNET... Por favor, aguarde."):
-                    try:
-                        response_ia_texto = requests.post(WEBHOOK_URL, json=payload_texto, timeout=30)
-                        
-                        if response_ia_texto.status_code == 200:
-                            resposta_ia = limpar_resposta_ia(response_ia_texto.text)
-                            
-                            st.success("Análise concluída!")
-                            st.subheader("📋 Resposta do Especialista Otávio Guilherme - OGNET BORRACHAS:")
-                            st.markdown(resposta_ia)
-                        else:
-                            st.error(f"Houve um problema no servidor de suporte. (Código: {response_ia_texto.status_code})")
-                    except requests.exceptions.RequestException:
-                        st.error("Não foi possível conectar ao motor de IA para suporte técnico.")
+                        st.success("Análise Concluída!")
+                        st.subheader("📋 Instruções do Especialista Otávio Guilherme:")
+                        st.markdown(resposta_ia)
+                else:
+                    st.error(f"Não foi possível obter resposta do servidor técnico. (Código: {response.status_code})")
+            except requests.exceptions.RequestException:
+                st.error("Falha de comunicação com o motor de inteligência artificial.")
 
-# Elementos estáticos do rodapé
 st.divider()
-st.caption("© 2026 OGNET BORRACHAS - Todos os direitos reservados.")
+st.caption("© 2026 OGNET BORRACHAS - Divisão de Suporte Técnico Pós-Venda.")
