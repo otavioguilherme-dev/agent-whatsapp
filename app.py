@@ -57,7 +57,7 @@ st.markdown("""
 
 # Cabeçalho Principal Centralizado
 try:
-    st.image("https://ognetborrachas.streamlit.app/~/+/media/38265db37548b0d424994d0517a2b3ae.jpg", width=150)
+    st.image("https://ognetborrachas.streamlit.app/~/+/media/LOGO_BANNER.jpg", width=150)
 except Exception:
     pass  
 
