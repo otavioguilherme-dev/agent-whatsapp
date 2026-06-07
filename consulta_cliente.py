@@ -4,25 +4,23 @@ import json
 import base64
 import re
 
-# Configuração visual da página (Modo amplo e limpo)
+# Configuração visual da página (Modo amplo e focado no usuário)
 st.set_page_config(
     page_title="Suporte Técnico OGNET BORRACHAS",
     page_icon="🔧",
-    layout="wide"  # Mudamos para wide para aproveitar melhor as colunas laterais
+    layout="wide"
 )
 
 # --- CONFIGURAÇÕES DO AGENTE DE SUPORTE ---
 WEBHOOK_URL = "https://hook.us2.make.com/3jdepfa2nlkipkyjj44qm2pmva1yndbi"
 IMGBB_API_KEY = "c303da0c70a1655c79f00832f7b1456d"
 
-# Ocultar menus padrões do Streamlit e aplicar estilização de bordas arredondadas nos cards
+# Ocultar menus padrões do Streamlit e aplicar o estilo do card de resposta
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    .css-1r6g72q {padding: 2rem 1rem;}
-    div[data-testid="stMetricValue"] { font-size: 24px; }
     .resposta-card {
         background-color: #f8f9fa;
         border-left: 5px solid #FF4B4B;
@@ -33,7 +31,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Layout do Topo / Cabeçalho em área centralizada
+# Layout do Cabeçalho
 with st.container():
     col_logo, col_titulo = st.columns([1, 4])
     with col_logo:
@@ -42,18 +40,18 @@ with st.container():
         except Exception:
             pass  
     with col_titulo:
-        st.title("🔧 Portal de Suporte Técnico Pós-Venda")
-        st.markdown("**OGNET BORRACHAS** — Soluções inteligentes e suporte especializado em gaxetas refrigeradas.")
+        st.title("🔧 Tecnico de Instalação da OGNET BORRACHAS")
+        st.markdown("Envie fotos da sua instalação ou digite aqui o seu problema ou dúvida que o nosso Técnico vai te ajudar a solucionar.")
 
 st.divider()
 
-# --- DIVISÃO DA TELA EM COLUNAS (LADO A LADO) ---
+# --- DIVISÃO DA TELA EM COLUNAS LADO A LADO ---
 st.subheader("📋 Preencha os dados do seu atendimento")
 col1, col2 = st.columns([1, 1], gap="large")
 
 with col1:
     st.markdown("### 📸 Passo 1: Envio Visual")
-    st.caption("Tire ou anexe uma foto nítida do problema constatado na instalação (Ex: frestas, folgas, borracha solta ou desalinhada).")
+    st.caption("Tire ou anexe uma foto nítida do problema constatado na instalação (Ex: frestas, folgas, borracha desalinhada).")
     foto_upload = st.file_uploader("", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
     
     if foto_upload is not None:
@@ -62,10 +60,10 @@ with col1:
 
 with col2:
     st.markdown("### ✍️ Passo 2: Relato Técnico")
-    st.caption("Descreva detalhadamente o comportamento da borracha ou do equipamento para complementar o diagnóstico da IA.")
+    st.caption("Descreva detalhadamente o comportamento da borracha ou do equipamento para a IA.")
     texto_cliente = st.text_area(
         "",
-        placeholder="Ex: Instalei a borracha nova hoje na porta superior, mas ficou uma fresta de quase 1 centímetro no canto direito superior. O ímã parece não puxar forte o suficiente. O que devo fazer?",
+        placeholder="Ex: Instalei a borracha nova hoje na porta superior, mas ficou uma fresta no canto direito. O ímã parece fraco. O que devo fazer?",
         height=180,
         label_visibility="collapsed",
         key="relato_suporte"
@@ -73,18 +71,18 @@ with col2:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Centraliza o botão principal na largura total abaixo das duas colunas
+# Botão principal ocupando a largura total abaixo das colunas
 if st.button("🚀 Iniciar Diagnóstico do Especialista OGNET", type="primary", use_container_width=True):
     link_imagem_final = "sem_foto"
     prosseguir = True
     
     if not texto_cliente.strip() and foto_upload is None:
-        st.warning("Por favor, envie uma foto ou descreva detalhadamente o problema.")
+        st.warning("Por favor, envie uma foto ou descreva detalhadamente o problema antes de iniciar.")
         prosseguir = False
         
     if prosseguir:
         if foto_upload is not None:
-            with st.spinner("🤖 Otimizando e enviando imagem do problema..."):
+            with st.spinner("🤖 Processando imagem do problema..."):
                 try:
                     file_bytes = foto_upload.read()
                     base64_image = base64.b64encode(file_bytes).decode('utf-8')
@@ -126,7 +124,7 @@ if st.button("🚀 Iniciar Diagnóstico do Especialista OGNET", type="primary", 
                 if texto.endswith('"') or texto.endswith("'"): texto = texto[:-1].strip()
             return texto.strip()
 
-        with st.spinner("🤖 O especialista Otávio Guilherme está avaliando o seu caso... Aguarde um instante."):
+        with st.spinner("🤖 O especialista Otávio Guilherme está avaliando o seu caso... Aguarde."):
             try:
                 response = requests.post(WEBHOOK_URL, data=payload, timeout=45)
                 
@@ -134,21 +132,19 @@ if st.button("🚀 Iniciar Diagnóstico do Especialista OGNET", type="primary", 
                     resposta_ia = limpar_resposta_ia(response.text)
                     
                     if not resposta_ia.strip():
-                        st.warning("⚠️ O servidor técnico processou a requisição, mas a resposta retornou vazia. Verifique o Make.")
+                        st.warning("⚠️ O servidor respondeu, mas o diagnóstico retornou vazio. Verifique a rota no Make.")
                     else:
                         st.success("Análise de Suporte Concluída!")
                         
-                        # Bloco estilizado de resposta como um card profissional de diagnóstico
                         st.markdown('<div class="resposta-card">', unsafe_allow_html=True)
-                        st.subheader("📋 Diagnóstico & Instruções Operacionais:")
+                        st.subheader("📋 Diagnóstico & Instruções do Especialista:")
                         st.markdown(resposta_ia)
                         st.markdown('</div>', unsafe_allow_html=True)
                         st.balloons()
                 else:
-                    st.error(f"Não foi possível obter resposta do servidor técnico. (Código: {response.status_code})")
+                    st.error(f"Não foi possível obter resposta do servidor. (Código: {response.status_code})")
             except requests.exceptions.RequestException:
                 st.error("Falha de comunicação com o motor de inteligência artificial.")
 
-# Rodapé estático
 st.markdown("<br><hr>", unsafe_allow_html=True)
 st.caption("© 2026 OGNET BORRACHAS - Divisão Corporativa de Suporte Técnico Pós-Venda.")
