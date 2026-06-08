@@ -222,7 +222,6 @@ st.markdown("""
        * **"Mudança de ideia"** ou **"Não preciso mais do produto"**
     4. Selecione a opção de frete reverso gratuito oferecido pela Shopee e leve o código ao posto indicado.
     """)
-    ---
     
     ⚠️ **Atenção:** Selecionar outros motivos que não sejam arrependimento/mudança de ideia pode travar o seu reembolso em análise manual pela plataforma por até 30 dias. Seguindo os passos acima, seu dinheiro cai de volta na conta de forma automática e sem custos!
     
