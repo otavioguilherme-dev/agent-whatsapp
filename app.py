@@ -180,6 +180,49 @@ if st.button("🚀 Iniciar Análise do Especialista Técnico da OGNET BORRACHAS"
                     st.error(f"Erro na comunicação com a IA. (Código: {response.status_code})")
             except requests.exceptions.RequestException:
                 st.error("Não foi possível conectar ao servidor de inteligência artificial.")
+# --- ADICIONE ESTE BLOCO NO FINAL DO SEU CÓDIGO DE SUPORTE ---
 
+st.markdown("<br>", unsafe_allow_html=True)
+st.divider()
+st.subheader("🛠️ Precisa de mais ajuda?")
+
+# Criando duas colunas para os botões finais
+col1, col2 = st.columns(2)
+
+with col1:
+    # Botão de redirecionamento direto para o WhatsApp comercial
+    msg_whatsapp = "Olá! Vim pelo suporte do assistente virtual da OGNET e preciso de ajuda com meu pedido."
+    link_wa = f"https://wa.me/5511994251306?text={requests.utils.quote(msg_whatsapp)}"
+    
+    st.markdown(
+        f'<a href="{link_wa}" target="_blank">'
+        '<button style="width:100%; background-color:#25D366; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:16px;">'
+        '💬 Falar com Atendente no WhatsApp'
+        '</button></a>',
+        unsafe_allow_html=True
+    )
+
+with col2:
+    # Botão que abre uma janela popup explicativa para cancelamento seguro
+    if st.button("❌ Quero Cancelar/Trocar meu Pedido", use_container_width=True):
+        st.info("💡 **Instruções para Cancelamento sem Custos Adicionais:**")
+        st.markdown("""
+        Para garantir o seu reembolso integral de forma rápida e evitar cobranças de taxas extras desnecessárias, siga este procedimento:
+        
+        1. **Não abra disputa ou reclamação** na sua fatura do cartão ou intermediador de pagamento. Isso atrasa o processo em até 30 dias.
+        2. Clique no botão ao lado para falar com nossa equipe pelo **WhatsApp (11 99425-1306)**.
+        3. Informe o motivo como **'Desistência por Arrependimento de Compra'** (opção padrão que não gera tarifas administrativas para a loja).
+        
+        Nossa equipe fará o estorno direto na sua conta de forma imediata!
+        """)
+
+# Customização extra para o botão do WhatsApp não quebrar o visual OGNET
+st.markdown("""
+    <style>
+    div[data-testid="column"] button {
+        height: 50px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 st.markdown("<br><hr>", unsafe_allow_html=True)
 st.caption("© 2026 OGNET BORRACHAS - Divisão Corporativa de Suporte Técnico Pós-Venda.")
