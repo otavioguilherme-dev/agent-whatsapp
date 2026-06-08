@@ -196,39 +196,8 @@ st.markdown(
     '<button style="width:100%; background-color:#25D366; color:white; border:none; padding:14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:16px; margin-bottom:12px;">'
     '💬 Falar com Atendente no WhatsApp'
     '</button></a>',
-    unsafe_allow_html=True
-
-# 2. BOTÃO DE DEVOLUÇÃO (Linha Inferior)
-if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
-    st.info("💡 **Instruções para Devolução Rápida e Gratuita:**")
-    st.markdown("""
-    Se a sua compra foi realizada pelo **Mercado Livre** ou **Shopee**, você pode devolver o produto de forma totalmente gratuita e receber seu reembolso imediato seguindo o passo a passo abaixo:
-    
-    ### 📦 No Mercado Livre:
-    1. Vá em **Minhas Compras** e clique no seu pedido da OGNET.
-    2. Escolha a opção **Devolver o produto**.
-    3. Selecione exatamente um destes motivos:
-       * **"É o que eu comprei, mas não me serve"**
-       * **"Me arrependi da compra"**
-       * **"É o tamanho escolhido, mas não serve"**
-    4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
-    
-    ---
-    
-    ### 🛒 Na Shopee:
-    1. Vá em **Eu** > **Minhas Compras** > **A Caminho/Entregue** e clique no pedido.
-    2. Clique no botão **Pedir Reembolso/Devolução** *(Atenção: Não clique em 'Pedido Recebido' antes disso)*.
-    3. No motivo da devolução, selecione:
-       * **"Mudança de ideia"** ou **"Não preciso mais do produto"**
-    4. Selecione a opção de frete reverso gratuito oferecido pela Shopee e leve o código ao posto indicado.
-    
-    ---
-    
-    ⚠️ **Atenção:** Selecionar outros motivos que não sejam arrependimento/mudança de ideia pode travar o seu reembolso em análise manual pela plataforma por até 30 dias. Seguindo os passos acima, seu dinheiro cai de volta na conta de forma automática e sem custos!
-    
-    💬 *Dúvidas sobre como fazer? Clique no botão acima para falar conosco diretamente no WhatsApp (11 99425-1306).*
-    """)
-
+  unsafe_allow_html=True
+)
 # 2. BOTÃO DE DEVOLUÇÃO (Linha Inferior)
 if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
     st.info("💡 **Instruções para Devolução Rápida e Gratuita:**")
@@ -281,6 +250,7 @@ if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=Tru
     
     💬 *Dúvidas sobre como fazer? Clique no botão acima para falar conosco diretamente no WhatsApp (11 99425-1306).*
     """)
+
 
 # Customização extra para o botão do WhatsApp não quebrar o visual OGNET
 st.markdown("""
