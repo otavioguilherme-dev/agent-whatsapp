@@ -203,17 +203,35 @@ with col1:
     )
 
 with col2:
-    # Botão que abre uma janela popup explicativa para cancelamento seguro
-    if st.button("❌ Quero Cancelar/Trocar meu Pedido", use_container_width=True):
-        st.info("💡 **Instruções para Cancelamento sem Custos Adicionais:**")
+    # Botão que abre as instruções de devolução inteligente
+    if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
+        st.info("💡 **Instruções para Devolução Rápida e Gratuita:**")
         st.markdown("""
-        Para garantir o seu reembolso integral de forma rápida e evitar cobranças de taxas extras desnecessárias, siga este procedimento:
+        Se a sua compra foi realizada pelo **Mercado Livre** ou **Shopee**, você pode devolver o produto de forma totalmente gratuita e receber seu reembolso imediato seguindo o passo a passo abaixo:
         
-        1. **Não abra disputa ou reclamação** na sua fatura do cartão ou intermediador de pagamento. Isso atrasa o processo em até 30 dias.
-        2. Clique no botão ao lado para falar com nossa equipe pelo **WhatsApp (11 99425-1306)**.
-        3. Informe o motivo como **'Desistência por Arrependimento de Compra'** (opção padrão que não gera tarifas administrativas para a loja).
+        ### 📦 No Mercado Livre:
+        1. Vá em **Minhas Compras** e clique no seu pedido da OGNET.
+        2. Escolha a opção **Devolver o produto**.
+        3. Selecione exatamente um destes motivos:
+           * **"É o que eu comprei, mas não me serve"**
+           * **"Me arrependi da compra"**
+           * **"É o tamanho escolhido, mas não serve"**
+        4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
         
-        Nossa equipe fará o estorno direto na sua conta de forma imediata!
+        ---
+        
+        ### 🛒 Na Shopee:
+        1. Vá em **Eu** > **Minhas Compras** > **A Caminho/Entregue** e clique no pedido.
+        2. Clique no botão **Pedir Reembolso/Devolução** (Atenção: Não clique em 'Pedido Recebido' antes disso).
+        3. No motivo da devolução, selecione:
+           * **"Mudança de ideia"** ou **"Não preciso mais do produto"**
+        4. Selecione a opção de frete reverso gratuito oferecido pela Shopee e leve o código ao posto indicado.
+        
+        ---
+        
+        ⚠️ **Atenção:** Selecionar outros motivos que não sejam arrependimento/mudança de ideia pode travar o seu reembolso em análise manual pela plataforma por até 30 dias. Seguindo os passos acima, seu dinheiro cai de volta na conta de forma automática!
+        
+        💬 *Dúvidas sobre como fazer? Clique no botão ao lado para falar conosco diretamente no WhatsApp (11 99425-1306).*
         """)
 
 # Customização extra para o botão do WhatsApp não quebrar o visual OGNET
