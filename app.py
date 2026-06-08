@@ -189,10 +189,19 @@ st.subheader("🛠️ Precisa de mais ajuda?")
 msg_whatsapp = "Olá! Vim pelo suporte do assistente virtual da OGNET e preciso de ajuda com meu pedido."
 link_wa = f"https://wa.me/5511994251306?text={requests.utils.quote(msg_whatsapp)}"
 
-st.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+# 2. BOTÃO DE DEVOLUÇÃO (Linha Inferior)
+if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
+    st.info("💡 **Instruções para Devolução Rápida e Gratuita:**")
+    
+    st.markdown("""
+    Se a sua compra foi realizada pelo **Mercado Livre** ou **Shopee**, você pode devolver o produto de forma totalmente gratuita e receber seu reembolso imediato seguindo o passo a passo abaixo:
+    """, unsafe_allow_html=True)
+    
+    # Bloco Mercado Livre com Ícone
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 5px;">
         <img src="https://img.icons8.com/color/48/mercado-libre.png" width="30"/>
-        <h3 style="margin: 0; color: #1B2E7C !important;">No Mercado Livre:</h3>
+        <h3 style="margin: 0; color: #1B2E7C !important; font-size: 18px;">No Mercado Livre:</h3>
     </div>
     """, unsafe_allow_html=True)
     
@@ -206,12 +215,13 @@ st.markdown("""
     4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
     """)
     
-    st.markdown("---")
+    st.divider()
     
+    # Bloco Shopee com Ícone
     st.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 5px;">
         <img src="https://img.icons8.com/color/48/shopee.png" width="30"/>
-        <h3 style="margin: 0; color: #1B2E7C !important;">Na Shopee:</h3>
+        <h3 style="margin: 0; color: #1B2E7C !important; font-size: 18px;">Na Shopee:</h3>
     </div>
     """, unsafe_allow_html=True)
     
@@ -223,6 +233,10 @@ st.markdown("""
     4. Selecione a opção de frete reverso gratuito oferecido pela Shopee e leve o código ao posto indicado.
     """)
     
+    st.divider()
+    
+    # Aviso Final de Segurança
+    st.markdown("""
     ⚠️ **Atenção:** Selecionar outros motivos que não sejam arrependimento/mudança de ideia pode travar o seu reembolso em análise manual pela plataforma por até 30 dias. Seguindo os passos acima, seu dinheiro cai de volta na conta de forma automática e sem custos!
     
     💬 *Dúvidas sobre como fazer? Clique no botão acima para falar conosco diretamente no WhatsApp (11 99425-1306).*
