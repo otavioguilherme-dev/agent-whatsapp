@@ -180,7 +180,8 @@ if st.button("🚀 Iniciar Análise do Especialista Técnico da OGNET BORRACHAS"
                     st.error(f"Erro na comunicação com a IA. (Código: {response.status_code})")
             except requests.exceptions.RequestException:
                 st.error("Não foi possível conectar ao servidor de inteligência artificial.")
-# --- ADICIONE ESTE BLOCO NO FINAL DO SEU CÓDIGO DE SUPORTE ---
+# --- ADICIONE ESTE BLOCO NO LOCAL ONDE DEVE FICAR OS BOTÕES DE AJUDA ---
+
 st.markdown("<br>", unsafe_allow_html=True)
 st.divider()
 st.subheader("🛠️ Precisa de mais ajuda?")
@@ -188,6 +189,13 @@ st.subheader("🛠️ Precisa de mais ajuda?")
 # 1. BOTÃO DO WHATSAPP (Linha Superior)
 msg_whatsapp = "Olá! Vim pelo suporte do assistente virtual da OGNET e preciso de ajuda com meu pedido."
 link_wa = f"https://wa.me/5511994251306?text={requests.utils.quote(msg_whatsapp)}"
+
+st.markdown(
+    f'<a href="{link_wa}" target="_blank">'
+    '<button style="width:100%; background-color:#25D366; color:white; border:none; padding:14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:16px; margin-bottom:12px;">'
+    '💬 Falar com Atendente no WhatsApp'
+    '</button></a>',
+    unsafe_allow_html=True
 
 # 2. BOTÃO DE DEVOLUÇÃO (Linha Inferior)
 if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
