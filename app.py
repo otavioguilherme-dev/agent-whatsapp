@@ -225,7 +225,7 @@ if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=Tru
     3. Selecione exatamente um destes motivos:
        * **"É o que eu comprei, mas não me serve"**
        * **"Me arrependi da compra"**
-       * **"### CASO JA TENHA ABERTO RECLAMAÇÃO ENCERRE, E REABRA NOVAMENTO USANDO OS MOTIVOS ACIMA, A LIBERAÇÃO DA DEVOLUÇÃO É IMEDIATA ###"**
+       * **"### CASO JA TENHA ABERTO RECLAMAÇÃO ENCERRE, E REABRA NOVAMENTE USANDO OS MOTIVOS ACIMA, A LIBERAÇÃO DA DEVOLUÇÃO É IMEDIATA E GRATUITA ###"**
     4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
     """)
     
