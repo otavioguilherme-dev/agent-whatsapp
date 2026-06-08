@@ -181,58 +181,52 @@ if st.button("🚀 Iniciar Análise do Especialista Técnico da OGNET BORRACHAS"
             except requests.exceptions.RequestException:
                 st.error("Não foi possível conectar ao servidor de inteligência artificial.")
 # --- ADICIONE ESTE BLOCO NO FINAL DO SEU CÓDIGO DE SUPORTE ---
-
 st.markdown("<br>", unsafe_allow_html=True)
 st.divider()
 st.subheader("🛠️ Precisa de mais ajuda?")
 
-# Criando duas colunas para os botões finais
-col1, col2 = st.columns(2)
+# 1. BOTÃO DO WHATSAPP (Linha Superior)
+msg_whatsapp = "Olá! Vim pelo suporte do assistente virtual da OGNET e preciso de ajuda com meu pedido."
+link_wa = f"https://wa.me/5511994251306?text={requests.utils.quote(msg_whatsapp)}"
 
-with col1:
-    # Botão de redirecionamento direto para o WhatsApp comercial
-    msg_whatsapp = "Olá! Vim pelo suporte do assistente virtual da OGNET e preciso de ajuda com meu pedido."
-    link_wa = f"https://wa.me/5511994251306?text={requests.utils.quote(msg_whatsapp)}"
+st.markdown(
+    f'<a href="{link_wa}" target="_blank">'
+    '<button style="width:100%; background-color:#25D366; color:white; border:none; padding:14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:16px; margin-bottom:12px;">'
+    '💬 Falar com Atendente no WhatsApp'
+    '</button></a>',
+    unsafe_allow_html=True
+)
+
+# 2. BOTÃO DE DEVOLUÇÃO (Linha Inferior)
+if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
+    st.info("💡 **Instruções para Devolução Rápida e Gratuita:**")
+    st.markdown("""
+    Se a sua compra foi realizada pelo **Mercado Livre** ou **Shopee**, você pode devolver o produto de forma totalmente gratuita e receber seu reembolso imediato seguindo o passo a passo abaixo:
     
-    st.markdown(
-        f'<a href="{link_wa}" target="_blank">'
-        '<button style="width:100%; background-color:#25D366; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:16px;">'
-        '💬 Falar com Atendente no WhatsApp'
-        '</button></a>',
-        unsafe_allow_html=True
-    )
-
-with col2:
-    # Botão que abre as instruções de devolução inteligente
-    if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
-        st.info("💡 **Instruções para Devolução Rápida e Gratuita:**")
-        st.markdown("""
-        Se a sua compra foi realizada pelo **Mercado Livre** ou **Shopee**, você pode devolver o produto de forma totalmente gratuita e receber seu reembolso imediato seguindo o passo a passo abaixo:
-        
-        ### 📦 No Mercado Livre:
-        1. Vá em **Minhas Compras** e clique no seu pedido da OGNET.
-        2. Escolha a opção **Devolver o produto**.
-        3. Selecione exatamente um destes motivos:
-           * **"É o que eu comprei, mas não me serve"**
-           * **"Me arrependi da compra"**
-           * **"##### Caso ja tenha aberto uma reclamação cancele e faça uma nova abertura com os motivos listados acima #####"**
-        4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
-        
-        ---
-        
-        ### 🛒 Na Shopee:
-        1. Vá em **Eu** > **Minhas Compras** > **A Caminho/Entregue** e clique no pedido.
-        2. Clique no botão **Pedir Reembolso/Devolução** (Atenção: Não clique em 'Pedido Recebido' antes disso).
-        3. No motivo da devolução, selecione:
-           * **"Mudança de ideia"** ou **"Não preciso mais do produto"**
-        4. Selecione a opção de frete reverso gratuito oferecido pela Shopee e leve o código ao posto indicado.
-        
-        ---
-        
-        ⚠️ **Atenção:** Selecionar outros motivos que não sejam arrependimento/mudança de ideia pode travar o seu reembolso em análise manual pela plataforma por até 30 dias. Seguindo os passos acima, seu dinheiro cai de volta na conta de forma automática!
-        
-        💬 *Dúvidas sobre como fazer? Clique no botão ao lado para falar conosco diretamente no WhatsApp (11 99425-1306).*
-        """)
+    ### 📦 No Mercado Livre:
+    1. Vá em **Minhas Compras** e clique no seu pedido da OGNET.
+    2. Escolha a opção **Devolver o produto**.
+    3. Selecione exatamente um destes motivos:
+       * **"É o que eu comprei, mas não me serve"**
+       * **"Me arrependi da compra"**
+       * **"É o tamanho escolhido, mas não serve"**
+    4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
+    
+    ---
+    
+    ### 🛒 Na Shopee:
+    1. Vá em **Eu** > **Minhas Compras** > **A Caminho/Entregue** e clique no pedido.
+    2. Clique no botão **Pedir Reembolso/Devolução** *(Atenção: Não clique em 'Pedido Recebido' antes disso)*.
+    3. No motivo da devolução, selecione:
+       * **"Mudança de ideia"** ou **"Não preciso mais do produto"**
+    4. Selecione a opção de frete reverso gratuito oferecido pela Shopee e leve o código ao posto indicado.
+    
+    ---
+    
+    ⚠️ **Atenção:** Selecionar outros motivos que não sejam arrependimento/mudança de ideia pode travar o seu reembolso em análise manual pela plataforma por até 30 dias. Seguindo os passos acima, seu dinheiro cai de volta na conta de forma automática e sem custos!
+    
+    💬 *Dúvidas sobre como fazer? Clique no botão acima para falar conosco diretamente no WhatsApp (11 99425-1306).*
+    """)
 
 # Customização extra para o botão do WhatsApp não quebrar o visual OGNET
 st.markdown("""
