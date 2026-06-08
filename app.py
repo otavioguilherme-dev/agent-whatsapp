@@ -215,7 +215,7 @@ with col2:
         3. Selecione exatamente um destes motivos:
            * **"É o que eu comprei, mas não me serve"**
            * **"Me arrependi da compra"**
-        # Caso ja tenha aberto uma reclamação cancele e faça uma nova abertura com os motivos listados acima #
+           * **"##### Caso ja tenha aberto uma reclamação cancele e faça uma nova abertura com os motivos listados acima #####"**
         4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
         
         ---
