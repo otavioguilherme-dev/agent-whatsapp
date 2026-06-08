@@ -206,10 +206,15 @@ if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=Tru
     Se a sua compra foi realizada pelo **Mercado Livre** ou **Shopee**, você pode devolver o produto de forma totalmente gratuita e receber seu reembolso imediato seguindo o passo a passo abaixo:
     """, unsafe_allow_html=True)
     
-    # Bloco Mercado Livre com Ícone
+    # Bloco Mercado Livre com SVG Nativo Corrigido
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 5px;">
-        <img src="https://img.icons8.com/color/48/mercado-libre.png" width="30"/>
+        <svg viewBox="0 0 48 48" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="22" fill="#FFF500"/>
+            <path d="M15 28c3 0 5-2 6-5 1-2 2-3 4-3s3 1 4 3c1 3 3 5 6 5 1 0 2-1 2-2s-1-2-2-2c-2 0-3-1-4-3-1-2-3-4-6-4s-5 2-6 4c-1 2-2 3-4 3-1 0-2 1-2 2s1 2 2 2z" fill="#2D3277"/>
+            <circle cx="18" cy="19" r="2" fill="#2D3277"/>
+            <circle cx="30" cy="19" r="2" fill="#2D3277"/>
+        </svg>
         <h3 style="margin: 0; color: #1B2E7C !important; font-size: 18px;">No Mercado Livre:</h3>
     </div>
     """, unsafe_allow_html=True)
@@ -220,16 +225,20 @@ if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=Tru
     3. Selecione exatamente um destes motivos:
        * **"É o que eu comprei, mas não me serve"**
        * **"Me arrependi da compra"**
-       * **"É o tamanho escolhido, mas não serve"**
+       * **"### CASO JA TENHA ABERTO RECLAMAÇÃO ENCERRE, E REABRA NOVAMENTO USANDO OS MOTIVOS ACIMA, A LIBERAÇÃO DA DEVOLUÇÃO É IMEDIATA ###"**
     4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
     """)
     
     st.divider()
     
-    # Bloco Shopee com Ícone
+    # Bloco Shopee com SVG Nativo Corrigido
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 5px;">
-        <img src="https://img.icons8.com/color/48/shopee.png" width="30"/>
+        <svg viewBox="0 0 48 48" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+            <path d="M41 15H7c-1.1 0-2 .9-2 2v22c0 1.1.9 2 2 2h34c1.1 0 2-.9 2-2V17c0-1.1-.9-2-2-2z" fill="#FE5722"/>
+            <path d="M30 15v-4c0-3.3-2.7-6-6-6s-6 2.7-6 6v4h12zm-9-4c0-1.7 1.3-3 3-3s3 1.3 3 3v4h-6v-4z" fill="#E64A19"/>
+            <path d="M20.5 28.5c0 1.4-1.1 2.5-2.5 2.5s-2.5-1.1-2.5-2.5V23h5v5.5zm12 0c0 1.4-1.1 2.5-2.5 2.5s-2.5-1.1-2.5-2.5V23h5v5.5z" fill="#FFF"/>
+        </svg>
         <h3 style="margin: 0; color: #1B2E7C !important; font-size: 18px;">Na Shopee:</h3>
     </div>
     """, unsafe_allow_html=True)
@@ -243,6 +252,13 @@ if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=Tru
     """)
     
     st.divider()
+    
+    # Aviso Final de Segurança
+    st.markdown("""
+    ⚠️ **Atenção:** Selecionar outros motivos que não sejam arrependimento/mudança de ideia pode travar o seu reembolso em análise manual pela plataforma por até 30 dias. Seguindo os passos acima, seu dinheiro cai de volta na conta de forma automática e sem custos!
+    
+    💬 *Dúvidas sobre como fazer? Clique no botão acima para falar conosco diretamente no WhatsApp (11 99425-1306).*
+    """)
     
     # Aviso Final de Segurança
     st.markdown("""
