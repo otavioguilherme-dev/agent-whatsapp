@@ -260,14 +260,6 @@ if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=Tru
     💬 *Dúvidas sobre como fazer? Clique no botão acima para falar conosco diretamente no WhatsApp (11 99425-1306).*
     """)
     
-    # Aviso Final de Segurança
-    st.markdown("""
-    ⚠️ **Atenção:** Selecionar outros motivos que não sejam arrependimento/mudança de ideia pode travar o seu reembolso em análise manual pela plataforma por até 30 dias. Seguindo os passos acima, seu dinheiro cai de volta na conta de forma automática e sem custos!
-    
-    💬 *Dúvidas sobre como fazer? Clique no botão acima para falar conosco diretamente no WhatsApp (11 99425-1306).*
-    """)
-
-
 # Customização extra para o botão do WhatsApp não quebrar o visual OGNET
 st.markdown("""
     <style>
