@@ -57,10 +57,8 @@ st.markdown("""
 
 # Cabeçalho Principal Centralizado com Logo Local
 try:
-    # O Streamlit lê o arquivo "LOGO_BANNER.jpg" direto do seu diretório
     st.image("LOGO_BANNER.jpg", width=550)
 except Exception as e:
-    # Caso o arquivo não seja encontrado por algum motivo, exibe o título em texto
     st.warning("Carregando cabeçalho técnico...")
 
 st.title("🧰 Agente de IA para Suporte Técnico e Instalação - OGNET-BORRACHAS")
@@ -81,7 +79,7 @@ if foto_upload is not None:
 
 # Passo 2: Relato do Problema Técnico
 st.markdown("### ✍️ 2. O que está acontecendo? Explique aqui qual é o problema ou duvida!")
-st.caption("Descreva detalhadamente a duvida ou problema na sua borracha para guiar o nosso especialista técnico.")
+st.caption("Descreva detalhadamente a duvida ou problema na sua borracha para guiar o nosso專 Especilista técnico.")
 texto_cliente = st.text_area(
     "Relato do cliente:",
     placeholder="Ex: Instalei a borracha nova hoje, mas ficou uma fresta de quase 1 centímetro no canto superior direito...",
@@ -92,7 +90,7 @@ texto_cliente = st.text_area(
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Botão de Ação (Largura Completa com cores dinâmicas da OGNET)
+# Botão de Ação
 if st.button("🚀 Iniciar Análise do Especialista Técnico da OGNET BORRACHAS", type="primary", use_container_width=True):
     link_imagem_final = "sem_foto"
     prosseguir = True
@@ -181,8 +179,7 @@ if st.button("🚀 Iniciar Análise do Especialista Técnico da OGNET BORRACHAS"
             except requests.exceptions.RequestException:
                 st.error("Não foi possível conectar ao servidor de inteligência artificial.")
                 
-# --- ADICIONE ESTE BLOCO NO LOCAL ONDE DEVE FICAR OS BOTÕES DE AJUDA ---
-
+# --- BOTÕES DE SUPORTE ADICIONAL ---
 st.markdown("<br>", unsafe_allow_html=True)
 st.divider()
 st.subheader("🛠️ Precisa de mais ajuda?")
@@ -196,8 +193,9 @@ st.markdown(
     '<button style="width:100%; background-color:#25D366; color:white; border:none; padding:14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:16px; margin-bottom:12px;">'
     '💬 Falar com Atendente no WhatsApp'
     '</button></a>',
-  unsafe_allow_html=True
+    unsafe_allow_html=True
 )
+
 # 2. BOTÃO DE DEVOLUÇÃO (Linha Inferior)
 if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
     st.info("💡 **Instruções para Devolução Rápida e Gratuita:**")
@@ -225,7 +223,7 @@ if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=Tru
     3. Selecione exatamente um destes motivos:
        * **"É o que eu comprei, mas não me serve"**
        * **"Me arrependi da compra"**
-       * **"### CASO JA TENHA ABERTO RECLAMAÇÃO ENCERRE, E REABRA NOVAMENTE USANDO OS MOTIVOS ACIMA, A LIBERAÇÃO DA DEVOLUÇÃO É IMEDIATA, REEMBOLSO RAPIDO E NAO TEM CUSTOS ADICIONAIS ###"**
+       * **"### CASO JÁ TENHA ABERTO RECLAMAÇÃO ENCERRE, E REABRA NOVAMENTE USANDO OS MOTIVOS ACIMA, A LIBERAÇÃO DA DEVOLUÇÃO É IMEDIATA, REEMBOLSO RÁPIDO E NÃO TEM CUSTOS ADICIONAIS ###"**
     4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
     """)
     
@@ -260,7 +258,7 @@ if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=Tru
     💬 *Dúvidas sobre como fazer? Clique no botão acima para falar conosco diretamente no WhatsApp (11 99425-1306).*
     """)
     
-# Customização extra para o botão do WhatsApp não quebrar o visual OGNET
+# Customização extra para o botão do WhatsApp
 st.markdown("""
     <style>
     div[data-testid="column"] button {
