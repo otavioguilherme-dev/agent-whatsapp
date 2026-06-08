@@ -197,7 +197,6 @@ st.markdown(
     '💬 Falar com Atendente no WhatsApp'
     '</button></a>',
     unsafe_allow_html=True
-)
 
 # 2. BOTÃO DE DEVOLUÇÃO (Linha Inferior)
 if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
