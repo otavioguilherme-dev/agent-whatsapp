@@ -1,108 +1,270 @@
-import os
+import streamlit as st
 import requests
-import pandas as pd
 import json
-from flask import Flask, request, jsonify
+import base64
+import re
 
-app = Flask(__name__)
+# Configuração visual da página (Modo centralizado tradicional)
+st.set_page_config(
+    page_title="Agente de IA para Suporte Técnico e Instalação - OGNET-BORRACHAS",
+    page_icon="🔧",
+    layout="centered"
+)
 
-# ==========================================
-# CONFIGURAÇÕES DA API E BASELINKER
-# ==========================================
-BASELINKER_API_URL = "https://api.baselinker.com/connector.php"
-API_TOKEN = os.environ.get("BASELINKER_TOKEN", "8005379-8008488-VNRWQK4RZAPBTQ56SPHT6YDWXDJBJH83WPFY4C99A0E903RNR9SWPA9VO3BAYDZJ")
-ID_TABELA_VENDA_DIRETA = "19191"
+# --- CONFIGURAÇÕES DO WEBHOOK ---
+WEBHOOK_URL = "https://hook.us2.make.com/3jdepfa2nlkipkyjj44qm2pmva1yndbi"
+IMGBB_API_KEY = "c303da0c70a1655c79f00832f7b1456d"
 
-def buscar_produto_baselinker(sku):
-    headers = {"X-BLToken": API_TOKEN}
-    try:
-        resp_inv = requests.post(BASELINKER_API_URL, data={"method": "getInventories", "parameters": "{}"}, headers=headers).json()
-        id_inv = resp_inv.get("inventories", [])[0].get("inventory_id")
-        
-        payload_prod = {"method": "getInventoryProductsList", "parameters": json.dumps({"inventory_id": id_inv, "filter_sku": sku.strip()})}
-        resp_prod = requests.post(BASELINKER_API_URL, data=payload_prod, headers=headers).json()
-        produtos = resp_prod.get("products", {})
-        
-        if not produtos: return None, None
-        
-        product_id = list(produtos.keys())[0]
-        payload_data = {"method": "getInventoryProductsData", "parameters": json.dumps({"inventory_id": id_inv, "products": [int(product_id)]})}
-        resp_data = requests.post(BASELINKER_API_URL, data=payload_data, headers=headers).json()
-        
-        dados_prod = resp_data.get("products", {}).get(str(product_id))
-        if dados_prod:
-            preco = dados_prod.get("prices", {}).get(ID_TABELA_VENDA_DIRETA, 0.0)
-            estoque = sum(dados_prod.get("stock", {}).values()) if dados_prod.get("stock") else 0
-            return float(preco), int(estoque)
-    except:
-        pass
-    return None, None
-
-# ==========================================
-# ROTA QUE O TYPEBOT VAI ACESSAR
-# ==========================================
-@app.route('/consultar', methods=['POST'])
-def consultar_modelo():
-    dados = request.json
-    modelo_busca = dados.get('modelo', '').strip().upper()
+# CUSTOMIZAÇÃO CORES OGNET (Baseado em LOGO_BANNER.jpg)
+# Azul Escuro: #1B2E7C | Laranja: #E96A23
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    [data-testid="stSidebar"] {display: none;}
     
-    if not modelo_busca:
-        return jsonify({"mensagem": "⚠️ Por favor, digite o modelo (Ex: BRM44)."}), 400
+    /* Customização do Botão Principal (Estilo OGNET) */
+    div.stButton > button:first-child {
+        background-color: #E96A23 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease !important;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #1B2E7C !important;
+        box-shadow: 0px 4px 10px rgba(27, 46, 124, 0.3) !important;
+    }
+    
+    /* Subtítulos em Azul Escuro */
+    h1, h2, h3 {
+        color: #1B2E7C !important;
+    }
+    
+    /* Card de Resposta com a borda Laranja OGNET e fundo suave */
+    .resposta-card {
+        background-color: #f8f9fa;
+        border-left: 6px solid #E96A23;
+        padding: 25px;
+        border-radius: 8px;
+        margin-top: 20px;
+        box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-    try:
-        # O arquivo base_gaxetas.xlsx deverá estar na mesma pasta deste código no servidor
-        df = pd.read_excel("base_gaxetas.xlsx")
-        for col in df.columns:
-            df[col] = df[col].astype(str).str.strip().str.upper()
+# Cabeçalho Principal Centralizado com Logo Local
+try:
+    st.image("LOGO_BANNER.jpg", width=550)
+except Exception as e:
+    st.warning("Carregando cabeçalho técnico...")
+
+st.title("🧰 Agente de IA para Suporte Técnico e Instalação - OGNET-BORRACHAS")
+st.markdown("Envie fotos da sua instalação ou digite aqui o seu problema ou dúvida que o nosso Especialista Técnico vai te ajudar a solucionar.")
+st.divider()
+
+# --- FLUXO EM COLUNA ÚNICA ---
+st.subheader("📋 Painel de Suporte Técnico")
+
+# Passo 1: Upload da Imagem do Problema
+st.markdown("### 📸 1. Envio da Foto do Problema (Opcional)")
+st.caption("Tire ou anexe uma imagem nítida do problema constatado (Ex: frestas na porta, borracha amassada, folgas).")
+foto_upload = st.file_uploader("Selecione a imagem do problema:", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
+
+if foto_upload is not None:
+    st.image(foto_upload, caption="⚡ Foto do problema carregada com sucesso", width=400)
+    st.divider()
+
+# Passo 2: Relato do Problema Técnico
+st.markdown("### ✍️ 2. O que está acontecendo? Explique aqui qual é o problema ou duvida!")
+st.caption("Descreva detalhadamente a duvida ou problema na sua borracha para guiar o nosso專 Especilista técnico.")
+texto_cliente = st.text_area(
+    "Relato do cliente:",
+    placeholder="Ex: Instalei a borracha nova hoje, mas ficou uma fresta de quase 1 centímetro no canto superior direito...",
+    height=150,
+    label_visibility="collapsed",
+    key="relato_suporte"
+)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Botão de Ação
+if st.button("🚀 Iniciar Análise do Especialista Técnico da OGNET BORRACHAS", type="primary", use_container_width=True):
+    link_imagem_final = "sem_foto"
+    prosseguir = True
+    
+    if not texto_cliente.strip() and foto_upload is None:
+        st.warning("Por favor, relate o problema por texto ou envie uma foto do defeito antes de continuar.")
+        prosseguir = False
+        
+    if prosseguir:
+        if foto_upload is not None:
+            with st.spinner("🤖 Analisando e enviando imagem do problema..."):
+                try:
+                    file_bytes = foto_upload.read()
+                    base64_image = base64.b64encode(file_bytes).decode('utf-8')
+                    
+                    imgbb_url = "https://api.imgbb.com/1/upload"
+                    payload_imgbb = {
+                        "key": IMGBB_API_KEY,
+                        "image": base64_image,
+                        "expiration": 600 
+                    }
+                    
+                    res_imgbb = requests.post(imgbb_url, data=payload_imgbb)
+                    res_data = res_imgbb.json()
+                    
+                    if res_imgbb.status_code == 200 and res_data.get("success"):
+                        link_imagem_final = res_data["data"]["url"]
+                except Exception as e:
+                    st.error(f"Erro no processamento da imagem: {e}")
+
+        payload = {
+            "foto": link_imagem_final,
+            "texto": texto_cliente.strip()
+        }
+        
+        def limpar_resposta_ia(texto_bruto):
+            if not isinstance(texto_bruto, str):
+                return ""
+            texto = texto_bruto.strip()
             
-        # Filtra pelo modelo
-        coluna_modelo = [c for c in df.columns if 'MODELO' in c or 'PRODUTO' in c or 'CODIGO' in c][0]
-        resultado = df[df[coluna_modelo].str.contains(modelo_busca, na=False)]
-        
-        if resultado.empty:
-            return jsonify({"mensagem": f"❌ Poxa, não encontrei o modelo *{modelo_busca}* na nossa base.\n\nQuer falar com o Otávio para ele verificar para você? Digite *0*."})
-        
-        # Pega o primeiro resultado da planilha
-        row = resultado.iloc[0]
-        marca = row.get('MARCA', 'N/A')
-        modelo_encontrado = row.get(coluna_modelo, 'N/A')
-        medida_ext = row.get('MEDIDA-EXTERNA', 'N/A')
-        medida_enc = row.get('MEDIDA-ENCAIXE', 'N/A')
-        sku_bruto = row.get('SKU', '')
-        
-        if sku_bruto == 'NAN' or not sku_bruto:
-            msg = f"📦 *Produto Localizado*\n\n🔹 *Marca:* {marca}\n🔹 *Modelo:* {modelo_encontrado}\n📐 *Medida Ext:* {medida_ext}\n📐 *Medida Enc:* {medida_enc}\n\n⚠️ *Preço indisponível no momento.*\nDeseja falar comigo para cotar esse item? Digite *0*."
-            return jsonify({"mensagem": msg})
+            try:
+                if texto.startswith('{'):
+                    dados_json = json.loads(texto)
+                    if "result" in dados_json:
+                        return dados_json["result"].strip()
+                    if "resposta_ia" in dados_json:
+                        return dados_json["resposta_ia"].strip()
+            except Exception:
+                pass
+
+            texto = re.sub(r'^\{\s*\\*"(resposta_ia|result)\\*"\s*:\s*\\*["\']', '', texto)
+            texto = re.sub(r'^\{\s*"(resposta_ia|result)"\s*:\s*["\']', '', texto)
             
-        # Divide SKUs (ex: 036014 / 036013) e busca os preços
-        skus = str(sku_bruto).split('/')
-        detalhes_skus = []
-        
-        for s in skus:
-            sku_limpo = s.strip()
-            if not sku_limpo: continue
+            for delimitador in ['","thoughtSignature"', '"thoughtSignature"', '","role"', '"finishReason"', '","candidates"']:
+                if delimitador in texto:
+                    texto = texto.split(delimitador, 1)[0]
+                    
+            texto = texto.replace('\\n', '\n').replace('\\"', '"').replace('\\t', '    ')
+            texto = texto.strip()
             
-            preco, estoque = buscar_produto_baselinker(sku_limpo)
-            if preco is not None:
-                status_estoque = f"✅ {estoque} peças" if estoque > 0 else "⏳ Sob encomenda"
-                # Formatação bonitinha com R$ e vírgula
-                valor_formatado = f"R$ {preco:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-                txt = f"🛒 *SKU:* {sku_limpo}\n💰 *Preço:* {valor_formatado}\n📦 *Estoque:* {status_estoque}"
-                detalhes_skus.append(txt)
-            else:
-                detalhes_skus.append(f"🛒 *SKU:* {sku_limpo}\n⚠️ *Preço não localizado.*")
+            while texto.endswith('}') or texto.endswith('"') or texto.endswith("'") or texto.endswith(']'):
+                if texto.endswith('}') or texto.endswith(']'): texto = texto[:-1].strip()
+                if texto.endswith('"') or texto.endswith("'"): texto = texto[:-1].strip()
                 
-        texto_skus = "\n\n".join(detalhes_skus)
-        
-        # Monta a resposta final que vai para o WhatsApp do cliente
-        mensagem_final = f"📦 *Produto Localizado!*\n\n🔹 *Marca:* {marca}\n🔹 *Modelo:* {modelo_encontrado}\n📐 *Medida Ext:* {medida_ext}\n\n{texto_skus}\n\n👉 *Quer fechar o pedido ou tirar dúvidas? Digite 0 para falar comigo.*"
-        
-        # Devolve a mensagem empacotada em JSON para o Typebot ler
-        return jsonify({"mensagem": mensagem_final})
-        
-    except Exception as e:
-        return jsonify({"mensagem": "❌ Ocorreu um erro interno ao buscar os dados.\nDigite *0* para falar com o atendente."}), 500
+            return texto.strip()
 
-if __name__ == '__main__':
-    # Roda o servidor na porta correta
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+        with st.spinner("🤖 Encaminhando para o especialista técnico Otávio Guilherme... Por favor, aguarde."):
+            try:
+                response = requests.post(WEBHOOK_URL, data=payload, timeout=45)
+                
+                if response.status_code == 200:
+                    resposta_ia = limpar_resposta_ia(response.text)
+                    
+                    if not resposta_ia.strip():
+                        st.warning("⚠️ O sistema processou o chamado, mas o diagnóstico retornou vazio. Verifique a configuração no Make.")
+                    else:
+                        st.success("Análise de Suporte Concluída!")
+                        
+                        st.markdown('<div class="resposta-card">', unsafe_allow_html=True)
+                        st.subheader("📋 Instruções Técnicas de Instalação:")
+                        st.markdown(resposta_ia)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        st.balloons()
+                else:
+                    st.error(f"Erro na comunicação com a IA. (Código: {response.status_code})")
+            except requests.exceptions.RequestException:
+                st.error("Não foi possível conectar ao servidor de inteligência artificial.")
+                
+# --- BOTÕES DE SUPORTE ADICIONAL ---
+st.markdown("<br>", unsafe_allow_html=True)
+st.divider()
+st.subheader("🛠️ Precisa de mais ajuda?")
+
+# 1. BOTÃO DO WHATSAPP (Linha Superior)
+msg_whatsapp = "Olá! Vim pelo suporte do assistente virtual da OGNET e preciso de ajuda com meu pedido."
+link_wa = f"https://wa.me/5511994251306?text={requests.utils.quote(msg_whatsapp)}"
+
+st.markdown(
+    f'<a href="{link_wa}" target="_blank">'
+    '<button style="width:100%; background-color:#25D366; color:white; border:none; padding:14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:16px; margin-bottom:12px;">'
+    '💬 Falar com Atendente no WhatsApp'
+    '</button></a>',
+    unsafe_allow_html=True
+)
+
+# 2. BOTÃO DE DEVOLUÇÃO (Linha Inferior)
+if st.button("❌ Quero Devolver / Cancelar meu Pedido", use_container_width=True):
+    st.info("💡 **Instruções para Devolução Rápida e Gratuita:**")
+    
+    st.markdown("""
+    Se a sua compra foi realizada pelo **Mercado Livre** ou **Shopee**, você pode devolver o produto de forma totalmente gratuita e receber seu reembolso imediato seguindo o passo a passo abaixo:
+    """, unsafe_allow_html=True)
+    
+    # Bloco Mercado Livre com SVG Nativo Corrigido
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 5px;">
+        <svg viewBox="0 0 48 48" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="22" fill="#FFF500"/>
+            <path d="M15 28c3 0 5-2 6-5 1-2 2-3 4-3s3 1 4 3c1 3 3 5 6 5 1 0 2-1 2-2s-1-2-2-2c-2 0-3-1-4-3-1-2-3-4-6-4s-5 2-6 4c-1 2-2 3-4 3-1 0-2 1-2 2s1 2 2 2z" fill="#2D3277"/>
+            <circle cx="18" cy="19" r="2" fill="#2D3277"/>
+            <circle cx="30" cy="19" r="2" fill="#2D3277"/>
+        </svg>
+        <h3 style="margin: 0; color: #1B2E7C !important; font-size: 18px;">No Mercado Livre:</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    1. Vá em **Minhas Compras** e clique no seu pedido da OGNET.
+    2. Escolha a opção **Devolver o produto**.
+    3. Selecione exatamente um destes motivos:
+       * **"É o que eu comprei, mas não me serve"**
+       * **"Me arrependi da compra"**
+       * **"### CASO JÁ TENHA ABERTO RECLAMAÇÃO ENCERRE, E REABRA NOVAMENTE USANDO OS MOTIVOS ACIMA, A LIBERAÇÃO DA DEVOLUÇÃO É IMEDIATA, REEMBOLSO RÁPIDO E NÃO TEM CUSTOS ADICIONAIS ###"**
+    4. O Mercado Livre vai gerar uma etiqueta de envio gratuita para você despachar nos Correios ou agência parceira.
+    """)
+    
+    st.divider()
+    
+    # Bloco Shopee com SVG Nativo Corrigido
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 5px;">
+        <svg viewBox="0 0 48 48" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+            <path d="M41 15H7c-1.1 0-2 .9-2 2v22c0 1.1.9 2 2 2h34c1.1 0 2-.9 2-2V17c0-1.1-.9-2-2-2z" fill="#FE5722"/>
+            <path d="M30 15v-4c0-3.3-2.7-6-6-6s-6 2.7-6 6v4h12zm-9-4c0-1.7 1.3-3 3-3s3 1.3 3 3v4h-6v-4z" fill="#E64A19"/>
+            <path d="M20.5 28.5c0 1.4-1.1 2.5-2.5 2.5s-2.5-1.1-2.5-2.5V23h5v5.5zm12 0c0 1.4-1.1 2.5-2.5 2.5s-2.5-1.1-2.5-2.5V23h5v5.5z" fill="#FFF"/>
+        </svg>
+        <h3 style="margin: 0; color: #1B2E7C !important; font-size: 18px;">Na Shopee:</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    1. Vá em **Eu** > **Minhas Compras** > **A Caminho/Entregue** e clique no pedido.
+    2. Clique no botão **Pedir Reembolso/Devolução** *(Atenção: Não clique em 'Pedido Recebido' antes disso)*.
+    3. No motivo da devolução, selecione:
+       * **"Mudança de ideia"** ou **"Não preciso mais do produto"**
+    4. Selecione a opção de frete reverso gratuito oferecido pela Shopee e leve o código ao posto indicado.
+    """)
+    
+    st.divider()
+    
+    # Aviso Final de Segurança
+    st.markdown("""
+    ⚠️ **Atenção:** Selecionar outros motivos que não sejam arrependimento/mudança de ideia pode travar o seu reembolso em análise manual pela plataforma por até 30 dias. Seguindo os passos acima, seu dinheiro cai de volta na conta de forma automática e sem custos!
+    
+    💬 *Dúvidas sobre como fazer? Clique no botão acima para falar conosco diretamente no WhatsApp (11 99425-1306).*
+    """)
+    
+# Customização extra para o botão do WhatsApp
+st.markdown("""
+    <style>
+    div[data-testid="column"] button {
+        height: 50px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+st.markdown("<br><hr>", unsafe_allow_html=True)
+st.caption("© 2026 OGNET BORRACHAS - Divisão Corporativa de Suporte Técnico Pós-Venda.")
